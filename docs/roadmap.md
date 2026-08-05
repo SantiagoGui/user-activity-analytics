@@ -40,20 +40,28 @@ exports a mutable instance.
 The highest-value phase. The MVP was verified by hand (curl + Playwright); nothing
 is automated. Everything after this phase is safer because of it.
 
-- [ ] Test runner wired up on both packages (vitest), `npm test` in each.
-- [ ] Unit: `csvParser` — the unquoted-JSON line, wrong header aborts, bad row is
+- [x] Test runner wired up on both packages (vitest), `npm test` in each.
+      Frontend has zero test files today (no testable unit exists before Phase
+      4); `vitest.config.ts` sets `passWithNoTests` so `npm test` is green
+      rather than red-by-default until then.
+- [x] Unit: `csvParser` — the unquoted-JSON line, wrong header aborts, bad row is
       skipped and counted, empty body, negative duration rejected.
-- [ ] Unit: `computeSessions` — the spec's worked example, the inclusive 30-min
+- [x] Unit: `computeSessions` — the spec's worked example, the inclusive 30-min
       boundary (exactly 30 min = same session, 30 min + 1s = split), single event,
       empty input.
-- [ ] Unit: `computeAnomalies` — identical durations produce none, single-sample
+- [x] Unit: `computeAnomalies` — identical durations produce none, single-sample
       group produces none, a clear outlier is flagged, grouping is per-action.
-- [ ] Unit: `computeUserSummary` / `computeActionTrends` — tie-break determinism.
-- [ ] Unit: `store` — binary-search range slicing at boundaries (inclusive start,
-      inclusive end), failed reload keeps old data.
-- [ ] Integration (supertest on `createApp`): each endpoint's 200 / 400 / 404 / 503
+- [x] Unit: `computeUserSummary` / `computeActionTrends` — tie-break determinism.
+- [x] Unit: `store` — binary-search range slicing at boundaries (inclusive start,
+      inclusive end); failed-reload-keeps-old-data actually lives in
+      `loader.test.ts` (mocking `fetchActivitiesCsv`), since `replaceData` itself
+      can't fail — see that file's comment.
+- [x] Integration (supertest on `createApp`): each endpoint's 200 / 400 / 404 / 503
       paths, including the `/summary` vs `/sessions` empty-range asymmetry.
-- [ ] Fixture CSV committed — tests must not hit the CDN.
+      `/load`'s success path is not integration-tested — it requires a real
+      network fetch, which this phase forbids tests from doing.
+- [x] Fixture CSV committed (`backend/test/fixtures/activities.csv`) — tests must
+      not hit the CDN.
 
 **Done when:** every invariant in CLAUDE.md §4 has a test that fails if you break it.
 
@@ -85,6 +93,9 @@ First phase that changes responses. Update `README.md` in the same commit.
 
 Mirrors Phase 1 on the other side. No routing yet.
 
+- [ ] Remove `passWithNoTests` from `frontend/vitest.config.ts` once the first
+      hook/component test exists (see Phase 2) — an empty suite should stop
+      being an acceptable green.
 - [ ] `useQuery(fetcher)` hook — owns `loading` / `error` / `data` / `run()`, with an
       `AbortController` so a superseded request can't overwrite a newer result.
 - [ ] `<ActivityFilters/>` — the userId + start + end block, with the validation that

@@ -1,0 +1,11 @@
+user_id,timestamp,action,metadata
+1,2024-01-01T09:05:00Z,click,{"page": "dashboard", "duration": 15}
+2,2024-01-02T08:00:00Z,login,{"page": "home", "duration": 20}
+1,2024-01-01T09:00:00Z,login,{"page": "dashboard", "duration": 30}
+3,2024-01-03T12:05:00Z,download,{"page": "documents", "duration": 55, "file_type": "csv"}
+1,2024-01-01T10:00:00Z,logout,{"page": "dashboard", "duration": 10}
+2,2024-01-02T08:16:00Z,search,{"page": "search", "duration": 9, "query": "bar"}
+1,2024-01-01T09:10:00Z,click,{"page": "reports", "duration": 45}
+3,2024-01-03T12:06:00Z,upload,{"page": "documents", "duration": 5, "file_size": 123456}
+2,2024-01-02T08:15:00Z,search,{"page": "search", "duration": 12, "query": "foo"}
+3,2024-01-03T12:00:00Z,download,{"page": "documents", "duration": 60, "file_type": "pdf"}
