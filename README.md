@@ -35,6 +35,15 @@ Open `http://localhost:5173`. If the backend's startup fetch failed (e.g. no net
 at boot), `POST http://localhost:4000/load` retries it; until a load succeeds, the
 other endpoints return `503`.
 
+## Testing
+
+```bash
+cd backend && npm test    # vitest: unit + supertest integration, fixture CSV, no network
+cd frontend && npm test   # vitest: currently 0 test files (passWithNoTests) —
+                           # real frontend tests land in Phase 4 once components
+                           # are extracted into testable units, see docs/roadmap.md
+```
+
 ## API
 
 - `GET /summary?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>` — `user_id`
@@ -67,6 +76,14 @@ other endpoints return `503`.
   in that state, not an error.
 - `POST /load` — re-fetch and re-parse the CSV, replacing the in-memory store on
   success only (a failed reload keeps serving the last good data).
+
+**Why `/summary` and `/action_trends` don't use the envelope:** the paginated
+`{ items, page, page_size, total, total_pages }` shape only exists on endpoints
+that are actually paginated. `/summary` returns a single object, not a list, so
+there's nothing to paginate. `/action_trends` returns a list too, but it's
+already bounded by `limit` (default 3, capped at 50) rather than paginated —
+a top-N ranking, not a browsable result set. This asymmetry (2 endpoints
+enveloped, 2 not) is deliberate, not an oversight.
 
 ## Data structures & optimization approach
 
