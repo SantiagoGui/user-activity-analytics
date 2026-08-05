@@ -1,4 +1,4 @@
-import { isValidIsoTimestamp } from './csvParser';
+import { isValidIsoTimestamp } from './shared/time';
 import { HttpError } from './errors';
 
 export interface TimeRange {

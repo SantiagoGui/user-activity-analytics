@@ -13,19 +13,19 @@ This is the hardening roadmap: seams, tests, one screen per feature, pagination.
 Every endpoint response stays byte-identical. This phase exists to make Phase 2
 possible: you can't integration-test an app that calls `listen()` at import time.
 
-- [ ] Split `server.ts` into `app.ts` exporting `createApp(store)` (routes + error
+- [x] Split `server.ts` into `app.ts` exporting `createApp(store)` (routes + error
       handler, no `listen`) and `server.ts` (bootstrap only: construct store, create
       app, listen, trigger initial load).
-- [ ] Remove the `activityStore` module singleton. Export the `ActivityStore` class;
+- [x] Remove the `activityStore` module singleton. Export the `ActivityStore` class;
       instantiate at the composition root and pass it in.
-- [ ] Extract the preamble duplicated across `/summary`, `/sessions`, `/anomalies`
+- [x] Extract the preamble duplicated across `/summary`, `/sessions`, `/anomalies`
       into one middleware: `requireLoaded` → `parseRequiredUserId` → `parseTimeRange`
       → 404 if `!hasUser` → attach the in-range events.
       **`/summary` keeps its additional 404 on an empty range — that one is specific
       to it** (see CLAUDE.md §4).
-- [ ] Move `isValidIsoTimestamp` out of `csvParser.ts` into `shared/time.ts`.
+- [x] Move `isValidIsoTimestamp` out of `csvParser.ts` into `shared/time.ts`.
       `validation.ts` must no longer import from the CSV parser.
-- [ ] Fix: `parseMetadata` accepts negative `duration`. `docs/data-source.md` says
+- [x] Fix: `parseMetadata` accepts negative `duration`. `docs/data-source.md` says
       not to assume non-negative. Reject `duration < 0` as an invalid row — a negative
       duration corrupts `avg_duration` and fabricates anomalies.
 

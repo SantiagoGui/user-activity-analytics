@@ -99,4 +99,4 @@ class ActivityStore {
   }
 }
 
-export const activityStore = new ActivityStore();
+export { ActivityStore };

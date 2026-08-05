@@ -1,4 +1,5 @@
 import { EXPECTED_CSV_HEADER } from './config';
+import { isValidIsoTimestamp } from './shared/time';
 import type { ActivityEvent, ActivityMetadata, LoadResult } from './types';
 
 const MAX_SAMPLE_REASONS = 20;
@@ -24,12 +25,6 @@ function splitDataLine(line: string): [string, string, string, string] | null {
   return parts as [string, string, string, string];
 }
 
-const ISO_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
-
-export function isValidIsoTimestamp(value: string): boolean {
-  return ISO_TIMESTAMP_RE.test(value) && !Number.isNaN(Date.parse(value));
-}
-
 function parseMetadata(raw: string): ActivityMetadata | null {
   let parsed: unknown;
   try {
@@ -41,7 +36,7 @@ function parseMetadata(raw: string): ActivityMetadata | null {
 
   const obj = parsed as Record<string, unknown>;
   if (typeof obj.page !== 'string') return null;
-  if (typeof obj.duration !== 'number' || !Number.isFinite(obj.duration)) return null;
+  if (typeof obj.duration !== 'number' || !Number.isFinite(obj.duration) || obj.duration < 0) return null;
 
   const metadata: ActivityMetadata = { page: obj.page, duration: obj.duration };
   if (typeof obj.query === 'string') metadata.query = obj.query;
