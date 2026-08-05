@@ -24,7 +24,7 @@ export function ActionTrendsChart({ trends }: { trends: TrendPair[] }) {
           responsive: true,
           plugins: {
             legend: { display: false },
-            title: { display: true, text: 'Top 3 user-action pairs' },
+            title: { display: true, text: `Top ${trends.length} user-action pairs` },
           },
           scales: {
             y: { beginAtZero: true, ticks: { precision: 0 } },

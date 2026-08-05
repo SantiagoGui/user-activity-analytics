@@ -2,11 +2,12 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import cors from 'cors';
 import { loadActivities } from './loader';
 import type { ActivityStore } from './store';
-import { parseTimeRange, parseRequiredUserId } from './validation';
+import { parseTimeRange, parseRequiredUserId, parsePagination, parseLimit } from './validation';
 import { HttpError } from './errors';
 import { computeUserSummary, computeActionTrends } from './analytics';
 import { computeSessions } from './sessions';
 import { computeAnomalies } from './anomalies';
+import { paginate } from './pagination';
 
 function requireLoaded(store: ActivityStore): void {
   if (!store.isLoaded()) {
@@ -71,26 +72,66 @@ export function createApp(store: ActivityStore): express.Express {
   app.get('/action_trends', (req: Request, res: Response, next: NextFunction) => {
     try {
       requireLoaded(store);
-      const { startMs, endMs } = parseTimeRange(req.query as Record<string, unknown>);
+      const query = req.query as Record<string, unknown>;
+      const { startMs, endMs } = parseTimeRange(query);
+      const limit = parseLimit(query);
       const usersEvents = store.getAllUsersEventsInRange(startMs, endMs);
-      res.json(computeActionTrends(usersEvents, 3));
+      res.json(computeActionTrends(usersEvents, limit));
     } catch (err) {
       next(err);
     }
   });
 
   /**
-   * /sessions and /anomalies return a *list*, so — unlike /summary, which returns a
-   * single object and 404s on an empty result — an empty list for a valid user is a
-   * normal, successful response (e.g. "no anomalies found" isn't an error). 404 is
-   * reserved for a user_id that has no data at all, still consistent with /summary.
+   * /sessions and /anomalies return a *paginated list*, so — unlike /summary, which
+   * returns a single object and 404s on an empty result — an empty result for a valid
+   * user is a normal, successful response (e.g. "no anomalies found" isn't an error;
+   * it's `{ items: [], total: 0, total_pages: 0, ... }`). 404 is reserved for a
+   * user_id that has no data at all, still consistent with /summary. Pagination is
+   * applied after computing the full session/anomaly list for the range — these are
+   * derived aggregates, not slices of raw events, so they can't be paginated earlier.
    */
-  app.get('/sessions', requireUserScope(store), (_req: Request, res: Response) => {
-    res.json(computeSessions(res.locals.events!));
+  app.get('/sessions', requireUserScope(store), (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, pageSize } = parsePagination(req.query as Record<string, unknown>);
+      const sessions = computeSessions(res.locals.events!);
+      res.json(paginate(sessions, page, pageSize));
+    } catch (err) {
+      next(err);
+    }
   });
 
-  app.get('/anomalies', requireUserScope(store), (_req: Request, res: Response) => {
-    res.json(computeAnomalies(res.locals.events!));
+  app.get('/anomalies', requireUserScope(store), (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, pageSize } = parsePagination(req.query as Record<string, unknown>);
+      const anomalies = computeAnomalies(res.locals.events!);
+      res.json(paginate(anomalies, page, pageSize));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/users', (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      requireLoaded(store);
+      const users = store.listUserCounts().map(({ userId, count }) => ({ user_id: userId, count }));
+      res.json(users);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Deliberately exempt from requireLoaded: its whole job is to report load
+  // state, including "never loaded," so it always 200s instead of 503ing.
+  app.get('/health', (_req: Request, res: Response) => {
+    const last = store.getLastLoadResult();
+    res.json({
+      loaded: store.isLoaded(),
+      total_lines: last?.totalLines ?? null,
+      rows_loaded: last?.loaded ?? null,
+      rows_skipped: last?.skipped ?? null,
+      skipped_reasons: last?.skippedReasons ?? null,
+    });
   });
 
   app.use((_req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { fetchAnomalies } from '../api';
-import type { AnomalyEvent } from '../types';
+import type { AnomalyEvent, Page } from '../types';
 
 function validate(userId: string, startTime: string, endTime: string): string | null {
   if (userId.trim() === '') return 'User ID is required.';
@@ -18,7 +18,7 @@ export function AnomaliesForm() {
   const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [anomalies, setAnomalies] = useState<AnomalyEvent[] | null>(null);
+  const [anomalies, setAnomalies] = useState<Page<AnomalyEvent> | null>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -75,8 +75,8 @@ export function AnomaliesForm() {
       </form>
 
       {error && <p className="error">{error}</p>}
-      {anomalies && anomalies.length === 0 && <p>No anomalies found for this user.</p>}
-      {anomalies && anomalies.length > 0 && (
+      {anomalies && anomalies.items.length === 0 && <p>No anomalies found for this user.</p>}
+      {anomalies && anomalies.items.length > 0 && (
         <table>
           <thead>
             <tr>
@@ -86,7 +86,7 @@ export function AnomaliesForm() {
             </tr>
           </thead>
           <tbody>
-            {anomalies.map((a, i) => (
+            {anomalies.items.map((a, i) => (
               <tr key={i}>
                 <td>{a.timestamp}</td>
                 <td>{a.action}</td>

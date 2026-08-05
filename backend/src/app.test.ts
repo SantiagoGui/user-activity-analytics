@@ -64,19 +64,30 @@ describe('GET /summary', () => {
 describe('GET /sessions and /anomalies', () => {
   const app = createLoadedApp();
 
-  it('/sessions 200s with the computed session list for a known user', async () => {
+  // Phase 3 change: /sessions now returns the paginated envelope
+  // { items, page, page_size, total, total_pages } instead of a bare array
+  // (docs/roadmap.md Phase 3). The session list itself is unchanged.
+  it('/sessions 200s with the paginated session envelope for a known user', async () => {
     const res = await request(app).get('/sessions?user_id=1');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
-      { start: '2024-01-01T09:00:00Z', end: '2024-01-01T09:10:00Z', actions: 3, total_duration: 90 },
-      { start: '2024-01-01T10:00:00Z', end: '2024-01-01T10:00:00Z', actions: 1, total_duration: 10 },
-    ]);
+    expect(res.body).toEqual({
+      items: [
+        { start: '2024-01-01T09:00:00Z', end: '2024-01-01T09:10:00Z', actions: 3, total_duration: 90 },
+        { start: '2024-01-01T10:00:00Z', end: '2024-01-01T10:00:00Z', actions: 1, total_duration: 10 },
+      ],
+      page: 1,
+      page_size: 20,
+      total: 2,
+      total_pages: 1,
+    });
   });
 
-  it('/anomalies 200s with an empty list when nothing clears the threshold', async () => {
+  // Phase 3 change: same envelope as /sessions above. total_pages is 0, not 1,
+  // for an empty result — Math.ceil(0/20) = 0, i.e. zero pages, not one empty page.
+  it('/anomalies 200s with an empty paginated envelope when nothing clears the threshold', async () => {
     const res = await request(app).get('/anomalies?user_id=1');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body).toEqual({ items: [], page: 1, page_size: 20, total: 0, total_pages: 0 });
   });
 
   it('404s for an unknown user on both endpoints', async () => {
@@ -86,19 +97,45 @@ describe('GET /sessions and /anomalies', () => {
     expect(anomalies.status).toBe(404);
   });
 
-  it('200s with [] (not 404) for a known user outside the time window', async () => {
+  // The 404-vs-200 asymmetry with /summary is untouched by Phase 3 — only the
+  // shape of the 200 body changed, to the same envelope as the tests above.
+  it('200s with an empty envelope (not 404) for a known user outside the time window', async () => {
     const res = await request(app).get(
       '/sessions?user_id=1&start_time=2030-01-01T00:00:00Z&end_time=2030-01-02T00:00:00Z',
     );
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body).toEqual({ items: [], page: 1, page_size: 20, total: 0, total_pages: 0 });
+  });
+
+  // New in Phase 3: page/page_size are honored, and an out-of-range page
+  // returns an empty items array with correct total/total_pages metadata
+  // rather than a 400 — Phase 6 builds pagination UI on top of this shape.
+  it('/sessions honors page/page_size and handles an out-of-range page', async () => {
+    const firstPage = await request(app).get('/sessions?user_id=1&page=1&page_size=1');
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body).toMatchObject({ page: 1, page_size: 1, total: 2, total_pages: 2 });
+    expect(firstPage.body.items).toHaveLength(1);
+
+    const outOfRange = await request(app).get('/sessions?user_id=1&page=99&page_size=1');
+    expect(outOfRange.status).toBe(200);
+    expect(outOfRange.body).toEqual({ items: [], page: 99, page_size: 1, total: 2, total_pages: 2 });
+  });
+
+  it('400s on an invalid page or page_size', async () => {
+    const badPage = await request(app).get('/sessions?user_id=1&page=0');
+    const badPageSize = await request(app).get('/sessions?user_id=1&page_size=abc');
+    expect(badPage.status).toBe(400);
+    expect(badPageSize.status).toBe(400);
   });
 });
 
 describe('GET /action_trends', () => {
   const app = createLoadedApp();
 
-  it('200s with the top 3 (user_id, action) pairs', async () => {
+  // No change from Phase 2: this test doesn't pass ?limit=, so the default
+  // (still 3) is exercised, and the response is still a bare array — only
+  // /sessions and /anomalies got the envelope treatment in Phase 3.
+  it('200s with the top 3 (user_id, action) pairs by default', async () => {
     const res = await request(app).get('/action_trends');
     expect(res.status).toBe(200);
     expect(res.body).toEqual([
@@ -106,6 +143,62 @@ describe('GET /action_trends', () => {
       { user_id: 2, action: 'search', count: 2 },
       { user_id: 3, action: 'download', count: 2 },
     ]);
+  });
+
+  // New in Phase 3: ?limit= overrides the default of 3.
+  it('honors ?limit=', async () => {
+    const res = await request(app).get('/action_trends?limit=1');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([{ user_id: 1, action: 'click', count: 2 }]);
+  });
+
+  it('400s on an invalid limit', async () => {
+    const res = await request(app).get('/action_trends?limit=0');
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /users', () => {
+  const app = createLoadedApp();
+
+  it('200s with every user_id and its event count, sorted ascending', async () => {
+    const res = await request(app).get('/users');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([
+      { user_id: 1, count: 4 },
+      { user_id: 2, count: 3 },
+      { user_id: 3, count: 3 },
+    ]);
+  });
+});
+
+describe('GET /health', () => {
+  it('200s with load status and row diagnostics once loaded', async () => {
+    const app = createLoadedApp();
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      loaded: true,
+      total_lines: 10,
+      rows_loaded: 10,
+      rows_skipped: 0,
+      skipped_reasons: [],
+    });
+  });
+
+  // Deliberately exempt from requireLoaded (unlike every other endpoint below):
+  // reporting "never loaded" is /health's actual job, not an error state.
+  it('200s with loaded:false before any successful load, instead of 503ing', async () => {
+    const app = createApp(new ActivityStore());
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      loaded: false,
+      total_lines: null,
+      rows_loaded: null,
+      rows_skipped: null,
+      skipped_reasons: null,
+    });
   });
 });
 
@@ -115,5 +208,17 @@ describe('endpoints before any successful load', () => {
     const res = await request(app).get('/summary?user_id=1');
     expect(res.status).toBe(503);
     expect(res.body.error).toMatch(/has not been loaded yet/);
+  });
+
+  // New in Phase 3: /sessions, /anomalies, /users all go through the same
+  // requireLoaded check as the Phase-1/2 endpoints.
+  it('503s on /sessions, /anomalies, and /users', async () => {
+    const app = createApp(new ActivityStore());
+    const sessions = await request(app).get('/sessions?user_id=1');
+    const anomalies = await request(app).get('/anomalies?user_id=1');
+    const users = await request(app).get('/users');
+    expect(sessions.status).toBe(503);
+    expect(anomalies.status).toBe(503);
+    expect(users.status).toBe(503);
   });
 });

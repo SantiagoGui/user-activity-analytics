@@ -18,9 +18,15 @@ A full-stack app answering analytics questions over a user-activity event log.
 - **Backend** (Node.js + TypeScript + Express): fetches `activities.csv` from a CDN
   URL on startup and via `POST /load`, parses it into an in-memory store, exposes:
   - `GET /summary?user_id=&start_time=&end_time=` — per-user stats.
-  - `GET /action_trends?start_time=&end_time=` — top `(user_id, action)` pairs.
-  - `GET /sessions?user_id=&start_time=&end_time=` — sessions (gap ≤ 30 min).
-  - `GET /anomalies?user_id=&start_time=&end_time=` — durations >2σ from the mean.
+  - `GET /action_trends?start_time=&end_time=&limit=` — top `(user_id, action)`
+    pairs (`limit` defaults to 3, capped at 50).
+  - `GET /sessions?user_id=&start_time=&end_time=&page=&page_size=` — sessions
+    (gap ≤ 30 min), paginated.
+  - `GET /anomalies?user_id=&start_time=&end_time=&page=&page_size=` —
+    durations >2σ from the mean, same paginated envelope as `/sessions`.
+  - `GET /users` — every known `user_id` with its event count.
+  - `GET /health` — load status and row/skip diagnostics; the one endpoint
+    that works before any successful load.
 - **Frontend** (React + TypeScript + Vite): one screen per feature, sharing a filter
   component and a query hook. Chart.js for trends.
 - **No database.** Everything lives in memory for the process lifetime.
@@ -85,10 +91,20 @@ A full-stack app answering analytics questions over a user-activity event log.
 These are decided, verified, and must not be changed as a side effect of refactoring.
 Changing any of them is a deliberate task with a doc update, never a cleanup.
 
-- **`/summary` 404s on an empty range; `/sessions` and `/anomalies` return `200 []`.**
-  This asymmetry is intentional: `/summary` returns a single object with no meaningful
-  empty shape, while an empty list is a correct answer for a list endpoint. A known
-  `user_id` with no data *at all* is 404 on all three.
+- **`/summary` 404s on an empty range; `/sessions` and `/anomalies` return
+  `200 { items: [], total: 0, total_pages: 0, ... }`.** This asymmetry is
+  intentional: `/summary` returns a single object with no meaningful empty
+  shape, while an empty result is a correct answer for a list endpoint. A
+  known `user_id` with no data *at all* is 404 on all three.
+- **`/anomalies` uses the same paginated envelope as `/sessions`**
+  (`{ items, page, page_size, total, total_pages }`), decided explicitly in
+  Phase 3 even though only `/sessions` strictly needed pagination —
+  consistency between two sibling list endpoints was judged worth more than
+  the smaller diff of leaving `/anomalies` as a bare array.
+- **Sessions/anomalies pagination is applied after computing the full result
+  set for the given range, never at the raw-event level** — sessions and
+  anomalies are derived aggregates, not slices of events, so there's no
+  earlier point at which paginating would even be meaningful.
 - **`start_time` after `end_time` → 400**, not an empty result.
 - **Session boundary is an inclusive `<= 30 min` gap**, matching the spec's worked
   example: 12:00 → 12:25 is one session; a 13:00 action after that starts a new one.

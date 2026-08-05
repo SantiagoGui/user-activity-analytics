@@ -71,19 +71,25 @@ is automated. Everything after this phase is safer because of it.
 
 First phase that changes responses. Update `README.md` in the same commit.
 
-- [ ] `GET /users` — available user IDs with event counts. Powers the frontend
+- [x] `GET /users` — available user IDs with event counts. Powers the frontend
       autocomplete; removes "guess a number" as the entry point to every screen.
-- [ ] `GET /health` — load status, row counts, skipped-row diagnostics. Uses
+- [x] `GET /health` — load status, row counts, skipped-row diagnostics. Uses
       `getLastLoadResult()`, currently dead code.
-- [ ] `/action_trends?limit=` — default 3, validated, capped. Chart title stops
+- [x] `/action_trends?limit=` — default 3, validated, capped. Chart title stops
       being hardcoded to "Top 3".
-- [ ] `/sessions` paginated: `?page=&page_size=` returning
+- [x] `/sessions` paginated: `?page=&page_size=` returning
       `{ items, page, page_size, total, total_pages }`.
       **Note:** sessions are derived from contiguous event runs, so pagination happens
       after computing all sessions for the range — you cannot paginate at the event
       level. Fine at this data size.
-- [ ] Decide and document: does `/anomalies` get the same envelope for consistency,
-      or does only `/sessions` change? Consistency is worth more than the diff.
+- [x] **Decided:** `/anomalies` gets the same paginated envelope as `/sessions`, for
+      consistency between sibling list endpoints — worth more than the smaller diff
+      of leaving `/anomalies` as a bare array. Recorded as an invariant in
+      CLAUDE.md §4.
+- [x] Frontend consumers (`SessionsForm`, `AnomaliesForm`, `api.ts`, `types.ts`)
+      updated to read the new `items` envelope — part of this contract change, not
+      deferred to Phase 4 (which is unrelated: `useQuery`, `<ActivityFilters/>`, the
+      timezone bug). No pagination UI yet — that's Phase 6.
 
 **Done when:** Phase 2 tests updated and passing, README's API section matches.
 

@@ -23,7 +23,8 @@ npm run dev
 ```
 
 **Frontend** (starts on `http://localhost:5173`, proxies `/summary`,
-`/action_trends`, `/load` to the backend — see `frontend/vite.config.ts`):
+`/action_trends`, `/sessions`, `/anomalies`, `/users`, `/health`, `/load` to the
+backend — see `frontend/vite.config.ts`):
 ```bash
 cd frontend
 npm install
@@ -39,18 +40,31 @@ other endpoints return `503`.
 - `GET /summary?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>` — `user_id`
   required, times optional. `400` on bad/missing params or `start_time > end_time`;
   `404` if the user has no matching rows.
-- `GET /action_trends?start_time=<ISO8601>&end_time=<ISO8601>` — both optional; top 3
-  `(user_id, action)` pairs by count in range.
-- `GET /sessions?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>` *(bonus)* —
-  `user_id` required. Groups that user's events (after time filtering) into sessions
-  wherever the gap since the previous action is ≤30 min; returns
-  `{ start, end, actions, total_duration }[]`. `404` only if the user has no data at
-  all — a known user with zero sessions *in range* returns `200 []`, since an empty
-  list is a normal result for a list endpoint (see below).
-- `GET /anomalies?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>` *(bonus)* —
-  `user_id` required. Per `(user_id, action)` pair, flags durations more than 2
-  population-standard-deviations from that pair's mean; returns
-  `{ timestamp, action, duration }[]`. Same `200 []` vs `404` semantics as `/sessions`.
+- `GET /action_trends?start_time=<ISO8601>&end_time=<ISO8601>&limit=<int>` — all
+  optional; top `(user_id, action)` pairs by count in range. `limit` defaults to 3,
+  `400` if not a positive integer, silently capped at 50.
+- `GET /sessions?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>&page=<int>&page_size=<int>`
+  *(bonus)* — `user_id` required. Groups that user's events (after time filtering)
+  into sessions wherever the gap since the previous action is ≤30 min; returns the
+  paginated envelope `{ items: { start, end, actions, total_duration }[], page,
+  page_size, total, total_pages }`. `page` defaults to 1, `page_size` to 20 (capped
+  at 100); an out-of-range `page` returns `items: []` with accurate
+  `total`/`total_pages`, not a `400`. `404` only if the user has no data at all — a
+  known user with zero sessions *in range* returns `200` with `items: []`, since an
+  empty result is a normal answer for a list endpoint (see below).
+- `GET /anomalies?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>&page=<int>&page_size=<int>`
+  *(bonus)* — `user_id` required. Per `(user_id, action)` pair, flags durations more
+  than 2 population-standard-deviations from that pair's mean; returns the **same
+  paginated envelope as `/sessions`** (`items: { timestamp, action, duration }[]`,
+  plus `page`/`page_size`/`total`/`total_pages`) — a deliberate consistency choice
+  between the two sibling list endpoints, even though only `/sessions` strictly
+  needed pagination. Same `200`-with-empty-`items` vs `404` semantics as `/sessions`.
+- `GET /users` — every known `user_id` with its event count, sorted ascending;
+  `[{ user_id, count }]`. Powers the frontend's (future) user autocomplete.
+- `GET /health` — `{ loaded, total_lines, rows_loaded, rows_skipped, skipped_reasons }`.
+  The one endpoint that does **not** 503 before a successful load — reporting
+  `loaded: false` (with the numeric fields `null`) is its normal, expected response
+  in that state, not an error.
 - `POST /load` — re-fetch and re-parse the CSV, replacing the in-memory store on
   success only (a failed reload keeps serving the last good data).
 
@@ -117,10 +131,14 @@ This is implemented per the literal formula in the spec rather than adjusted to 
 that particular example to fire; see the comment in `anomalies.ts` for the numbers.
 
 Both bonus endpoints reuse the same time-range validation as `/summary`, and treat an
-empty result list for a *known* user as a normal `200 []` rather than a `404` — a
-user having zero sessions or zero anomalies in a given window is a legitimate answer,
-not an error, which is a deliberate difference from `/summary`'s "404 on nothing to
-show" behavior for a single-object response.
+empty result for a *known* user as a normal `200` (with `items: []` in the paginated
+envelope) rather than a `404` — a user having zero sessions or zero anomalies in a
+given window is a legitimate answer, not an error, which is a deliberate difference
+from `/summary`'s "404 on nothing to show" behavior for a single-object response.
+`/anomalies` was deliberately given the same `{ items, page, page_size, total,
+total_pages }` envelope as `/sessions` (see `docs/roadmap.md` Phase 3) for
+consistency between the two sibling list endpoints, even though only `/sessions`'s
+result set strictly needed pagination.
 
 ## AI tool usage
 

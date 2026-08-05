@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { fetchSessions } from '../api';
-import type { SessionSummary } from '../types';
+import type { Page, SessionSummary } from '../types';
 
 function validate(userId: string, startTime: string, endTime: string): string | null {
   if (userId.trim() === '') return 'User ID is required.';
@@ -18,7 +18,7 @@ export function SessionsForm() {
   const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
+  const [sessions, setSessions] = useState<Page<SessionSummary> | null>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -75,8 +75,8 @@ export function SessionsForm() {
       </form>
 
       {error && <p className="error">{error}</p>}
-      {sessions && sessions.length === 0 && <p>No sessions found for this user.</p>}
-      {sessions && sessions.length > 0 && (
+      {sessions && sessions.items.length === 0 && <p>No sessions found for this user.</p>}
+      {sessions && sessions.items.length > 0 && (
         <table>
           <thead>
             <tr>
@@ -87,7 +87,7 @@ export function SessionsForm() {
             </tr>
           </thead>
           <tbody>
-            {sessions.map((s, i) => (
+            {sessions.items.map((s, i) => (
               <tr key={i}>
                 <td>{s.start}</td>
                 <td>{s.end}</td>

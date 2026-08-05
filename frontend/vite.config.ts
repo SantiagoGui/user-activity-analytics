@@ -12,6 +12,8 @@ export default defineConfig({
       '/action_trends': 'http://localhost:4000',
       '/sessions': 'http://localhost:4000',
       '/anomalies': 'http://localhost:4000',
+      '/users': 'http://localhost:4000',
+      '/health': 'http://localhost:4000',
       '/load': 'http://localhost:4000',
     },
   },

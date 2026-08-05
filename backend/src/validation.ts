@@ -1,9 +1,20 @@
 import { isValidIsoTimestamp } from './shared/time';
 import { HttpError } from './errors';
+import {
+  DEFAULT_ACTION_TRENDS_LIMIT,
+  DEFAULT_PAGE_SIZE,
+  MAX_ACTION_TRENDS_LIMIT,
+  MAX_PAGE_SIZE,
+} from './config';
 
 export interface TimeRange {
   startMs?: number;
   endMs?: number;
+}
+
+export interface Pagination {
+  page: number;
+  pageSize: number;
 }
 
 function firstValue(v: unknown): string | undefined {
@@ -50,4 +61,47 @@ export function parseRequiredUserId(query: Record<string, unknown>): number {
     throw new HttpError(400, `Invalid user_id "${raw}", expected an integer`);
   }
   return userId;
+}
+
+/** Parses optional page/page_size query params for /sessions and /anomalies.
+ *  page defaults to 1, page_size to DEFAULT_PAGE_SIZE. Both must be positive
+ *  integers (400 otherwise); page_size above MAX_PAGE_SIZE is clamped rather
+ *  than rejected, matching parseLimit's "validated vs. capped" split below. */
+export function parsePagination(query: Record<string, unknown>): Pagination {
+  const pageRaw = firstValue(query.page);
+  const pageSizeRaw = firstValue(query.page_size);
+
+  let page = 1;
+  if (pageRaw !== undefined && pageRaw !== '') {
+    page = Number(pageRaw);
+    if (!Number.isInteger(page) || page < 1) {
+      throw new HttpError(400, `Invalid page "${pageRaw}", expected a positive integer`);
+    }
+  }
+
+  let pageSize = DEFAULT_PAGE_SIZE;
+  if (pageSizeRaw !== undefined && pageSizeRaw !== '') {
+    pageSize = Number(pageSizeRaw);
+    if (!Number.isInteger(pageSize) || pageSize < 1) {
+      throw new HttpError(400, `Invalid page_size "${pageSizeRaw}", expected a positive integer`);
+    }
+    pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
+  }
+
+  return { page, pageSize };
+}
+
+/** Parses the optional limit query param for /action_trends. Defaults to
+ *  DEFAULT_ACTION_TRENDS_LIMIT; invalid values are a 400, values above
+ *  MAX_ACTION_TRENDS_LIMIT are silently capped rather than rejected. */
+export function parseLimit(query: Record<string, unknown>): number {
+  const raw = firstValue(query.limit);
+  if (raw === undefined || raw === '') {
+    return DEFAULT_ACTION_TRENDS_LIMIT;
+  }
+  const limit = Number(raw);
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new HttpError(400, `Invalid limit "${raw}", expected a positive integer`);
+  }
+  return Math.min(limit, MAX_ACTION_TRENDS_LIMIT);
 }

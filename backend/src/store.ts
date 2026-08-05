@@ -97,6 +97,15 @@ class ActivityStore {
     }
     return out;
   }
+
+  /** Every known user_id with its total event count, sorted ascending by
+   *  user_id — a new endpoint with no prior ordering to preserve, and
+   *  ascending is the natural contract for something powering an autocomplete. */
+  listUserCounts(): { userId: number; count: number }[] {
+    return Array.from(this.eventsByUser.entries())
+      .map(([userId, bucket]) => ({ userId, count: bucket.length }))
+      .sort((a, b) => a.userId - b.userId);
+  }
 }
 
 export { ActivityStore };

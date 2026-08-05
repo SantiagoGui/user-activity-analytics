@@ -26,3 +26,14 @@ export interface AnomalyEvent {
   action: string;
   duration: number;
 }
+
+// Mirrors backend/src/pagination.ts's Page<T> envelope, used by /sessions
+// and /anomalies. No pagination UI yet (docs/roadmap.md Phase 6) — forms
+// currently just render the full `items` list.
+export interface Page<T> {
+  items: T[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+}
