@@ -99,22 +99,32 @@ First phase that changes responses. Update `README.md` in the same commit.
 
 Mirrors Phase 1 on the other side. No routing yet.
 
-- [ ] Remove `passWithNoTests` from `frontend/vitest.config.ts` once the first
+- [x] Remove `passWithNoTests` from `frontend/vitest.config.ts` once the first
       hook/component test exists (see Phase 2) — an empty suite should stop
-      being an acceptable green.
-- [ ] `useQuery(fetcher)` hook — owns `loading` / `error` / `data` / `run()`, with an
+      being an acceptable green. Retired once `useQuery.test.ts` and
+      `validation.test.ts` landed.
+- [x] `useQuery(fetcher)` hook — owns `loading` / `error` / `data` / `run()`, with an
       `AbortController` so a superseded request can't overwrite a newer result.
-- [ ] `<ActivityFilters/>` — the userId + start + end block, with the validation that
-      is currently copy-pasted verbatim across three components.
-- [ ] API client takes an `AbortSignal`; drop the four near-identical query-string
+      Also gained a `reset()` (not originally scoped) so a failed re-validation
+      can clear a stale result without reopening the same race — see
+      `frontend/src/hooks/useQuery.ts`.
+- [x] `<ActivityFilters/>` — the userId + start + end block, with the validation that
+      is currently copy-pasted verbatim across three components. Reused by
+      `ActionTrendsForm` too (`requireUserId={false}`), removing what would
+      otherwise be a fourth near-duplicate.
+- [x] API client takes an `AbortSignal`; drop the four near-identical query-string
       builders into one helper.
-- [ ] **Fix the timezone bug.** Stop passing `datetime-local` values through
+- [x] **Fix the timezone bug.** Stop passing `datetime-local` values through
       `new Date().toISOString()` — that reinterprets them as browser-local and shifts
       the window (in UTC−3, a 05:21 filter is sent as 08:21Z). Treat input as UTC:
       append `:00Z`. Source data is UTC-native; the UI stays UTC end to end.
-- [ ] Shared formatters for timestamps and durations. Stop printing raw ISO strings
+      Verified live: submitting `05:21` sends `start_time=2024-01-01T05:21:00Z`.
+- [x] Shared formatters for timestamps and durations. Stop printing raw ISO strings
       and bare `123s` in tables.
-- [ ] Replace `key={i}` with a stable key — required before pagination.
+- [x] Replace `key={i}` with a stable key — required before pagination.
+      `Sessions`/`Anomalies` now key on `${start}|${end}` / `${timestamp}|${action}`;
+      confirmed `ActionTrendsChart` has no JSX-keyed list to fix (its two `.map()`
+      calls build Chart.js's `labels`/`data` arrays, not React elements).
 
 **Done when:** the three user-scoped screens contain no duplicated validation, state,
 or submit logic, and a fast double-submit can't render a stale response.

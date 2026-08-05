@@ -1,8 +1,8 @@
 import type { AnomalyEvent, Page, SessionSummary, TrendPair, UserSummary } from './types';
 
 /** Requests are relative paths, proxied to the backend by Vite's dev server config. */
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(path, { signal });
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const message =
@@ -14,47 +14,47 @@ async function getJson<T>(path: string): Promise<T> {
   return body as T;
 }
 
-export function fetchUserSummary(params: {
-  userId: number;
-  startTime?: string;
-  endTime?: string;
-}): Promise<UserSummary> {
-  const qs = new URLSearchParams({ user_id: String(params.userId) });
-  if (params.startTime) qs.set('start_time', params.startTime);
-  if (params.endTime) qs.set('end_time', params.endTime);
-  return getJson<UserSummary>(`/summary?${qs.toString()}`);
+/** Drops undefined/empty entries; everything else becomes a query param. */
+function buildQuery(params: Record<string, string | number | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') qs.set(key, String(value));
+  }
+  return qs.toString();
 }
 
-export function fetchActionTrends(params: { startTime?: string; endTime?: string }): Promise<TrendPair[]> {
-  const qs = new URLSearchParams();
-  if (params.startTime) qs.set('start_time', params.startTime);
-  if (params.endTime) qs.set('end_time', params.endTime);
-  const query = qs.toString();
-  return getJson<TrendPair[]>(`/action_trends${query ? `?${query}` : ''}`);
+export function fetchUserSummary(
+  params: { userId: number; startTime?: string; endTime?: string },
+  signal?: AbortSignal,
+): Promise<UserSummary> {
+  const query = buildQuery({ user_id: params.userId, start_time: params.startTime, end_time: params.endTime });
+  return getJson<UserSummary>(`/summary?${query}`, signal);
+}
+
+export function fetchActionTrends(
+  params: { startTime?: string; endTime?: string },
+  signal?: AbortSignal,
+): Promise<TrendPair[]> {
+  const query = buildQuery({ start_time: params.startTime, end_time: params.endTime });
+  return getJson<TrendPair[]>(`/action_trends${query ? `?${query}` : ''}`, signal);
 }
 
 // Phase 3: /sessions returns a paginated envelope, not a bare array. No
 // pagination UI yet (Phase 6), so callers currently just read `.items`.
-export function fetchSessions(params: {
-  userId: number;
-  startTime?: string;
-  endTime?: string;
-}): Promise<Page<SessionSummary>> {
-  const qs = new URLSearchParams({ user_id: String(params.userId) });
-  if (params.startTime) qs.set('start_time', params.startTime);
-  if (params.endTime) qs.set('end_time', params.endTime);
-  return getJson<Page<SessionSummary>>(`/sessions?${qs.toString()}`);
+export function fetchSessions(
+  params: { userId: number; startTime?: string; endTime?: string },
+  signal?: AbortSignal,
+): Promise<Page<SessionSummary>> {
+  const query = buildQuery({ user_id: params.userId, start_time: params.startTime, end_time: params.endTime });
+  return getJson<Page<SessionSummary>>(`/sessions?${query}`, signal);
 }
 
 // Same envelope as /sessions, per the Phase 3 decision to keep sibling list
 // endpoints consistent.
-export function fetchAnomalies(params: {
-  userId: number;
-  startTime?: string;
-  endTime?: string;
-}): Promise<Page<AnomalyEvent>> {
-  const qs = new URLSearchParams({ user_id: String(params.userId) });
-  if (params.startTime) qs.set('start_time', params.startTime);
-  if (params.endTime) qs.set('end_time', params.endTime);
-  return getJson<Page<AnomalyEvent>>(`/anomalies?${qs.toString()}`);
+export function fetchAnomalies(
+  params: { userId: number; startTime?: string; endTime?: string },
+  signal?: AbortSignal,
+): Promise<Page<AnomalyEvent>> {
+  const query = buildQuery({ user_id: params.userId, start_time: params.startTime, end_time: params.endTime });
+  return getJson<Page<AnomalyEvent>>(`/anomalies?${query}`, signal);
 }
