@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { validateFilters } from '../validation';
 import { datetimeLocalToUtcIso } from '../time';
 
@@ -6,6 +6,12 @@ export interface FilterValues {
   userId?: number;
   startTime?: string;
   endTime?: string;
+}
+
+export interface InitialFilterValues {
+  userId: string;
+  startTime: string;
+  endTime: string;
 }
 
 interface ActivityFiltersProps {
@@ -17,13 +23,31 @@ interface ActivityFiltersProps {
    *  wired to the parent's useQuery().reset() so a stale result doesn't stay
    *  on screen looking like it answers the (invalid) new query. */
   onInvalid?: () => void;
+  /** Drives the draft inputs from the URL (see useUrlFilters) — re-synced
+   *  whenever it changes externally (back/forward navigation, or a nav click
+   *  that carried over a different query string), without fighting the
+   *  user's own typing on every render. */
+  initialValues?: InitialFilterValues;
 }
 
-export function ActivityFilters({ requireUserId = true, loading, onSubmit, onInvalid }: ActivityFiltersProps) {
-  const [userId, setUserId] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+export function ActivityFilters({
+  requireUserId = true,
+  loading,
+  onSubmit,
+  onInvalid,
+  initialValues,
+}: ActivityFiltersProps) {
+  const [userId, setUserId] = useState(initialValues?.userId ?? '');
+  const [startTime, setStartTime] = useState(initialValues?.startTime ?? '');
+  const [endTime, setEndTime] = useState(initialValues?.endTime ?? '');
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialValues) return;
+    setUserId(initialValues.userId);
+    setStartTime(initialValues.startTime);
+    setEndTime(initialValues.endTime);
+  }, [initialValues?.userId, initialValues?.startTime, initialValues?.endTime]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

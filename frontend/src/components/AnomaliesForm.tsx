@@ -1,22 +1,30 @@
 import { fetchAnomalies } from '../api';
-import { useQuery } from '../hooks/useQuery';
+import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { AnomalyEvent, Page } from '../types';
 import { formatDuration, formatTimestamp } from '../format';
-import { ActivityFilters, type FilterValues } from './ActivityFilters';
+import { ActivityFilters } from './ActivityFilters';
 
 export function AnomaliesForm() {
-  const { data: anomalies, loading, error, run, reset } = useQuery<Page<AnomalyEvent>>();
-
-  function handleSubmit(filters: FilterValues) {
-    run((signal) =>
-      fetchAnomalies({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal),
-    );
-  }
+  const {
+    data: anomalies,
+    loading,
+    error,
+    reset,
+    initialValues,
+    handleSubmit,
+  } = useUrlFilters<Page<AnomalyEvent>>(true, (filters, signal) =>
+    fetchAnomalies({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal),
+  );
 
   return (
     <section className="card">
       <h2>Anomalies</h2>
-      <ActivityFilters loading={loading} onSubmit={handleSubmit} onInvalid={reset} />
+      <ActivityFilters
+        initialValues={initialValues}
+        loading={loading}
+        onSubmit={handleSubmit}
+        onInvalid={reset}
+      />
 
       {error && <p className="error">{error}</p>}
       {anomalies && anomalies.items.length === 0 && <p>No anomalies found for this user.</p>}

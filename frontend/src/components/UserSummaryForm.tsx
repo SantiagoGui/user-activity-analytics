@@ -1,20 +1,24 @@
 import { fetchUserSummary } from '../api';
-import { useQuery } from '../hooks/useQuery';
+import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { UserSummary } from '../types';
 import { formatDuration } from '../format';
-import { ActivityFilters, type FilterValues } from './ActivityFilters';
+import { ActivityFilters } from './ActivityFilters';
 
 export function UserSummaryForm() {
-  const { data: result, loading, error, run, reset } = useQuery<UserSummary>();
-
-  function handleSubmit(filters: FilterValues) {
-    run((signal) => fetchUserSummary({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal));
-  }
+  const { data: result, loading, error, reset, initialValues, handleSubmit } = useUrlFilters<UserSummary>(
+    true,
+    (filters, signal) => fetchUserSummary({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal),
+  );
 
   return (
     <section className="card">
       <h2>User Summary</h2>
-      <ActivityFilters loading={loading} onSubmit={handleSubmit} onInvalid={reset} />
+      <ActivityFilters
+        initialValues={initialValues}
+        loading={loading}
+        onSubmit={handleSubmit}
+        onInvalid={reset}
+      />
 
       {error && <p className="error">{error}</p>}
 

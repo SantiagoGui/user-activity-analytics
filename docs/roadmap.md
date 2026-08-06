@@ -133,13 +133,25 @@ or submit logic, and a fast double-submit can't render a stale response.
 
 ## Phase 5 — Routing
 
-- [ ] `react-router`, one route per feature: `/summary`, `/trends`, `/sessions`,
-      `/anomalies`. Redirect `/` to `/summary`.
-- [ ] Shared layout: header, nav with active state.
-- [ ] Filters live in the URL (`?user_id=74&start_time=...`) so a view is
-      shareable, reloadable, and the back button works.
-- [ ] Filters persist across navigation — switching from Summary to Sessions for the
-      same user shouldn't clear the form.
+- [x] `react-router`, one route per feature: `/summary`, `/trends`, `/sessions`,
+      `/anomalies`. Redirect `/` to `/summary`. Unknown paths redirect too.
+- [x] Shared layout: header, nav with active state (`frontend/src/components/Layout.tsx`).
+- [x] Filters live in the URL (`?user_id=74&start_time=...`) so a view is
+      shareable, reloadable, and the back button works. `useUrlFilters` hook
+      (`frontend/src/hooks/useUrlFilters.ts`) is the seam: `useSearchParams()`
+      is the single source of truth, a `useEffect` on the params auto-fetches
+      (paste/reload/back-forward all go through it), and submit just writes
+      to the URL rather than calling the fetch directly.
+- [x] Filters persist across navigation — switching from Summary to Sessions for the
+      same user shouldn't clear the form. `Layout`'s nav links carry the current
+      `location.search` forward, so the URL itself carries the filters across screens.
+- [x] **Found during verification, fixed in this phase:** `/summary`, `/sessions`,
+      `/anomalies` are now both proxied API path prefixes *and* client-side routes.
+      A hard navigation/fresh tab to e.g. `/sessions?user_id=1` was getting proxied
+      straight to the backend's JSON instead of serving the SPA. Fixed in
+      `frontend/vite.config.ts` with a `bypass` that lets real page navigations
+      (`Accept: text/html`) fall through to `index.html` while the app's own
+      `fetch()` calls (no such header) still proxy to the backend.
 
 **Done when:** pasting a URL reproduces the exact view, with no state in `App`.
 

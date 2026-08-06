@@ -5,8 +5,11 @@ and serves per-user summaries and cross-user action trends. Built for the Plank 
 Accelerator 2-hour programming test.
 
 - `backend/` — Node.js + TypeScript + Express REST API, in-memory store, no database.
-- `frontend/` — React + TypeScript (Vite) UI: four forms (summary, trends, sessions,
-  anomalies) + a Chart.js bar chart.
+- `frontend/` — React + TypeScript (Vite) UI: one routed screen per feature
+  (`/summary`, `/trends`, `/sessions`, `/anomalies`, react-router), sharing a
+  layout with nav, a filter component, and a query hook. Filters live in the
+  URL, so a screen's URL is shareable/reloadable and survives the back
+  button. A Chart.js bar chart backs the trends screen.
 - `docs/data-source.md` — structural analysis of the real CSV (schema, value ranges,
   the unquoted-JSON parsing edge case).
 - `docs/tasks.md` — the implementation task breakdown this was built against.

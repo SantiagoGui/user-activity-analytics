@@ -9,3 +9,15 @@
 export function datetimeLocalToUtcIso(value: string): string {
   return `${value}:00Z`;
 }
+
+/**
+ * Inverse of datetimeLocalToUtcIso — recovers a datetime-local input value
+ * (`YYYY-MM-DDTHH:mm`) from the full UTC ISO string stored in a URL query
+ * param, so a pasted/reloaded URL can pre-fill the form. Takes the first 16
+ * characters regardless of what follows (seconds/fraction/Z), since the
+ * input never shows more precision than minutes.
+ */
+export function utcIsoToDatetimeLocal(iso: string | null): string {
+  if (!iso) return '';
+  return iso.slice(0, 16);
+}

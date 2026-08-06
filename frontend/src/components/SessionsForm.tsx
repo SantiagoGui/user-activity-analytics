@@ -1,22 +1,30 @@
 import { fetchSessions } from '../api';
-import { useQuery } from '../hooks/useQuery';
+import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { Page, SessionSummary } from '../types';
 import { formatDuration, formatTimestamp } from '../format';
-import { ActivityFilters, type FilterValues } from './ActivityFilters';
+import { ActivityFilters } from './ActivityFilters';
 
 export function SessionsForm() {
-  const { data: sessions, loading, error, run, reset } = useQuery<Page<SessionSummary>>();
-
-  function handleSubmit(filters: FilterValues) {
-    run((signal) =>
-      fetchSessions({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal),
-    );
-  }
+  const {
+    data: sessions,
+    loading,
+    error,
+    reset,
+    initialValues,
+    handleSubmit,
+  } = useUrlFilters<Page<SessionSummary>>(true, (filters, signal) =>
+    fetchSessions({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal),
+  );
 
   return (
     <section className="card">
       <h2>Sessions</h2>
-      <ActivityFilters loading={loading} onSubmit={handleSubmit} onInvalid={reset} />
+      <ActivityFilters
+        initialValues={initialValues}
+        loading={loading}
+        onSubmit={handleSubmit}
+        onInvalid={reset}
+      />
 
       {error && <p className="error">{error}</p>}
       {sessions && sessions.items.length === 0 && <p>No sessions found for this user.</p>}
