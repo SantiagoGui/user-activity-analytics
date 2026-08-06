@@ -39,22 +39,33 @@ export function fetchActionTrends(
   return getJson<TrendPair[]>(`/action_trends${query ? `?${query}` : ''}`, signal);
 }
 
-// Phase 3: /sessions returns a paginated envelope, not a bare array. No
-// pagination UI yet (Phase 6), so callers currently just read `.items`.
+// Phase 3: /sessions returns a paginated envelope, not a bare array.
 export function fetchSessions(
-  params: { userId: number; startTime?: string; endTime?: string },
+  params: { userId: number; startTime?: string; endTime?: string; page?: number; pageSize?: number },
   signal?: AbortSignal,
 ): Promise<Page<SessionSummary>> {
-  const query = buildQuery({ user_id: params.userId, start_time: params.startTime, end_time: params.endTime });
+  const query = buildQuery({
+    user_id: params.userId,
+    start_time: params.startTime,
+    end_time: params.endTime,
+    page: params.page,
+    page_size: params.pageSize,
+  });
   return getJson<Page<SessionSummary>>(`/sessions?${query}`, signal);
 }
 
 // Same envelope as /sessions, per the Phase 3 decision to keep sibling list
 // endpoints consistent.
 export function fetchAnomalies(
-  params: { userId: number; startTime?: string; endTime?: string },
+  params: { userId: number; startTime?: string; endTime?: string; page?: number; pageSize?: number },
   signal?: AbortSignal,
 ): Promise<Page<AnomalyEvent>> {
-  const query = buildQuery({ user_id: params.userId, start_time: params.startTime, end_time: params.endTime });
+  const query = buildQuery({
+    user_id: params.userId,
+    start_time: params.startTime,
+    end_time: params.endTime,
+    page: params.page,
+    page_size: params.pageSize,
+  });
   return getJson<Page<AnomalyEvent>>(`/anomalies?${query}`, signal);
 }

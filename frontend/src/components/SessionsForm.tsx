@@ -3,6 +3,7 @@ import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { Page, SessionSummary } from '../types';
 import { formatDuration, formatTimestamp } from '../format';
 import { ActivityFilters } from './ActivityFilters';
+import { Pagination } from './Pagination';
 
 export function SessionsForm() {
   const {
@@ -12,8 +13,24 @@ export function SessionsForm() {
     reset,
     initialValues,
     handleSubmit,
-  } = useUrlFilters<Page<SessionSummary>>(true, (filters, signal) =>
-    fetchSessions({ userId: filters.userId!, startTime: filters.startTime, endTime: filters.endTime }, signal),
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useUrlFilters<Page<SessionSummary>>(
+    true,
+    (filters, signal) =>
+      fetchSessions(
+        {
+          userId: filters.userId!,
+          startTime: filters.startTime,
+          endTime: filters.endTime,
+          page: filters.page,
+          pageSize: filters.pageSize,
+        },
+        signal,
+      ),
+    { paginated: true },
   );
 
   return (
@@ -49,6 +66,16 @@ export function SessionsForm() {
             ))}
           </tbody>
         </table>
+      )}
+      {sessions && sessions.total > 0 && (
+        <Pagination
+          page={page}
+          totalPages={sessions.total_pages}
+          pageSize={pageSize}
+          loading={loading}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
     </section>
   );
