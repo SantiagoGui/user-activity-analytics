@@ -159,11 +159,25 @@ or submit logic, and a fast double-submit can't render a stale response.
 
 ## Phase 6 — Pagination UI
 
-- [ ] Page controls on Sessions, reading/writing `?page=` in the URL.
-- [ ] Page size selector, also in the URL.
-- [ ] Changing filters resets to page 1.
-- [ ] Out-of-range page handled (deep link to page 99 of a 3-page result).
-- [ ] Loading state doesn't collapse the table height on page change.
+- [x] Page controls on Sessions, reading/writing `?page=` in the URL. Shared
+      `<Pagination/>` (`frontend/src/components/Pagination.tsx`) also used by
+      Anomalies, since both page the same `Page<T>` envelope.
+- [x] Page size selector, also in the URL (`?page_size=`, options 10/20/50/100,
+      default 20 to match the backend's `DEFAULT_PAGE_SIZE`).
+- [x] Changing filters resets to page 1. `useUrlFilters.handleSubmit` drops
+      `page` from the next URL (defaults to 1) while carrying `page_size`
+      forward.
+- [x] Out-of-range page handled (deep link to page 99 of a 3-page result):
+      `useUrlFilters` clamps the URL's `page` down to the response's
+      `total_pages` once it's known, which re-triggers a fetch for the
+      corrected page. Verified live: `/sessions?user_id=3&page=99` lands on
+      `page=2` of 2.
+- [x] Loading state doesn't collapse the table height on page change.
+      `useQuery.run()` gained an opt-in `keepDataOnLoad` option — Sessions and
+      Anomalies pass `{ paginated: true }` to `useUrlFilters`, which keeps the
+      previous page's rows on screen while the next page loads instead of
+      nulling `data` immediately. Summary/Trends are unaffected (opt-in, off
+      by default).
 
 ---
 

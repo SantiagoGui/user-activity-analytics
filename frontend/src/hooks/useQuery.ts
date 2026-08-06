@@ -23,23 +23,30 @@ export function useQuery<T>() {
   const controllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
 
-  const run = useCallback(async (fetcher: (signal: AbortSignal) => Promise<T>) => {
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    const requestId = ++requestIdRef.current;
+  const run = useCallback(
+    async (fetcher: (signal: AbortSignal) => Promise<T>, options?: { keepDataOnLoad?: boolean }) => {
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      const requestId = ++requestIdRef.current;
 
-    setState({ data: null, loading: true, error: null });
-    try {
-      const data = await fetcher(controller.signal);
-      if (requestIdRef.current !== requestId) return; // superseded
-      setState({ data, loading: false, error: null });
-    } catch (err) {
-      if (requestIdRef.current !== requestId) return; // superseded
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      setState({ data: null, loading: false, error: err instanceof Error ? err.message : 'Something went wrong.' });
-    }
-  }, []);
+      setState((prev) => ({
+        data: options?.keepDataOnLoad ? prev.data : null,
+        loading: true,
+        error: null,
+      }));
+      try {
+        const data = await fetcher(controller.signal);
+        if (requestIdRef.current !== requestId) return; // superseded
+        setState({ data, loading: false, error: null });
+      } catch (err) {
+        if (requestIdRef.current !== requestId) return; // superseded
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setState({ data: null, loading: false, error: err instanceof Error ? err.message : 'Something went wrong.' });
+      }
+    },
+    [],
+  );
 
   // Manually returns to idle — e.g. a failed re-validation should clear a
   // stale result the same way a valid re-submit would, without letting a

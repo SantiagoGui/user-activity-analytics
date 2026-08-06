@@ -145,3 +145,32 @@ th {
   color: #46525c;
   font-weight: 600;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: #46525c;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.pagination label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pagination select {
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  border: 1px solid #c3ccd4;
+  border-radius: 4px;
+  font-family: inherit;
+}

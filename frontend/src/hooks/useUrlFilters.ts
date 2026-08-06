@@ -4,11 +4,21 @@ import { useQuery } from './useQuery';
 import { validateFilters } from '../validation';
 import { utcIsoToDatetimeLocal } from '../time';
 import type { FilterValues, InitialFilterValues } from '../components/ActivityFilters';
+import type { Page } from '../types';
 
 type Fetcher<T> = (
-  filters: { userId?: number; startTime?: string; endTime?: string },
+  filters: { userId?: number; startTime?: string; endTime?: string; page?: number; pageSize?: number },
   signal: AbortSignal,
 ) => Promise<T>;
+
+const DEFAULT_PAGE_SIZE = 20;
+
+interface UseUrlFiltersOptions {
+  /** Sessions/Anomalies read/write ?page=&page_size= and get the "don't
+   *  collapse the table on page change" + out-of-range-page behaviors below.
+   *  Summary/Trends don't paginate, so they leave this off. */
+  paginated?: boolean;
+}
 
 /**
  * Wires a screen's filters to the URL's query string instead of local
@@ -17,13 +27,20 @@ type Fetcher<T> = (
  * what makes the back button and cross-screen filter persistence work for
  * free, since every screen reads the same three params.
  */
-export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>) {
+export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>, options: UseUrlFiltersOptions = {}) {
+  const { paginated = false } = options;
   const [searchParams, setSearchParams] = useSearchParams();
   const { data, loading, error, run, reset } = useQuery<T>();
 
   const userIdParam = searchParams.get('user_id');
   const startTimeParam = searchParams.get('start_time');
   const endTimeParam = searchParams.get('end_time');
+  const pageParam = searchParams.get('page');
+  const pageSizeParam = searchParams.get('page_size');
+
+  const page = paginated && pageParam !== null && /^\d+$/.test(pageParam) ? Number(pageParam) : 1;
+  const pageSize =
+    paginated && pageSizeParam !== null && /^\d+$/.test(pageSizeParam) ? Number(pageSizeParam) : DEFAULT_PAGE_SIZE;
 
   const initialValues: InitialFilterValues = {
     userId: userIdParam ?? '',
@@ -46,26 +63,59 @@ export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>) {
     });
     if (error) return;
 
-    run((signal) =>
-      fetcher(
-        {
-          userId: requireUserId ? Number(userIdParam) : undefined,
-          startTime: startTimeParam ?? undefined,
-          endTime: endTimeParam ?? undefined,
-        },
-        signal,
-      ),
+    run(
+      (signal) =>
+        fetcher(
+          {
+            userId: requireUserId ? Number(userIdParam) : undefined,
+            startTime: startTimeParam ?? undefined,
+            endTime: endTimeParam ?? undefined,
+            page: paginated ? page : undefined,
+            pageSize: paginated ? pageSize : undefined,
+          },
+          signal,
+        ),
+      { keepDataOnLoad: paginated },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userIdParam, startTimeParam, endTimeParam, requireUserId]);
+  }, [userIdParam, startTimeParam, endTimeParam, requireUserId, page, pageSize, paginated]);
+
+  // Out-of-range page (e.g. a deep link to page 99 of a 3-page result):
+  // once a response comes back with a lower total_pages than what was
+  // requested, clamp the URL down to the last real page. That re-triggers
+  // the effect above with a valid page instead of leaving the table stuck
+  // showing an empty result for a page that doesn't exist.
+  useEffect(() => {
+    if (!paginated || !data) return;
+    const totalPages = (data as unknown as Page<unknown>).total_pages;
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginated, data]);
 
   function handleSubmit(filters: FilterValues) {
     const next = new URLSearchParams();
     if (filters.userId !== undefined) next.set('user_id', String(filters.userId));
     if (filters.startTime) next.set('start_time', filters.startTime);
     if (filters.endTime) next.set('end_time', filters.endTime);
+    // A filter change starts back at page 1, but keeps the chosen page size.
+    if (paginated && pageSizeParam !== null) next.set('page_size', pageSizeParam);
     setSearchParams(next);
   }
 
-  return { data, loading, error, reset, initialValues, handleSubmit };
+  function setPage(nextPage: number) {
+    const next = new URLSearchParams(searchParams);
+    next.set('page', String(nextPage));
+    setSearchParams(next);
+  }
+
+  function setPageSize(nextPageSize: number) {
+    const next = new URLSearchParams(searchParams);
+    next.set('page_size', String(nextPageSize));
+    next.set('page', '1');
+    setSearchParams(next);
+  }
+
+  return { data, loading, error, reset, initialValues, handleSubmit, page, pageSize, setPage, setPageSize };
 }
