@@ -191,7 +191,14 @@ or submit logic, and a fast double-submit can't render a stale response.
 - [ ] Real empty and error states per screen, not a bare `<p>`.
 - [ ] Accessibility: `role="alert"` on errors, `aria-busy` on submit, labels tied to
       inputs, visible focus.
-- [ ] Shared types between packages — stop hand-mirroring `types.ts`.
+- [x] Shared types between packages — stop hand-mirroring `types.ts`. New
+      `shared/` package (`activity-analytics-shared-types`, file: dependency
+      in both `backend/package.json` and `frontend/package.json`) exports
+      `UserSummary`, `TrendPair`, `SessionSummary`, `AnomalyEvent`, `Page<T>`.
+      Backend builds these shapes (`analytics.ts`, `pagination.ts`,
+      `sessions.ts`, `anomalies.ts` now import the interfaces instead of
+      declaring them); `frontend/src/types.ts` re-exports the same types
+      instead of hand-mirroring them.
 - [ ] README: evolution section (2h MVP → hardening phases), screenshots, test and
       lint commands, `PORT` documented.
 

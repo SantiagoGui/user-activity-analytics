@@ -1,4 +1,5 @@
-import type { ActivityEvent, AnomalyEvent } from './types';
+import type { ActivityEvent } from './types';
+import type { AnomalyEvent } from 'activity-analytics-shared-types';
 
 const STD_DEV_THRESHOLD = 2;
 

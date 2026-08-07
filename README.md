@@ -1,29 +1,44 @@
 # User Activity Log Analytics Platform
 
 Full-stack app that fetches `activities.csv` from a CDN URL, indexes it in memory,
-and serves per-user summaries and cross-user action trends. Built for the Plank AI
-Accelerator 2-hour programming test.
+and serves per-user summaries, cross-user action trends, sessions, and anomaly
+detection. Originally built for the Plank AI Accelerator 2-hour programming test;
+now in a second, unhurried phase hardening that MVP into a tested, multi-screen app
+(see "Evolution" below and [docs/roadmap.md](docs/roadmap.md)).
+
+![Screenshot](docs/screenshot.png)
+*(placeholder — `docs/screenshot.png` not yet captured; drop one in to replace this)*
 
 - `backend/` — Node.js + TypeScript + Express REST API, in-memory store, no database.
 - `frontend/` — React + TypeScript (Vite) UI: one routed screen per feature
   (`/summary`, `/trends`, `/sessions`, `/anomalies`, react-router), sharing a
   layout with nav, a filter component, and a query hook. Filters live in the
-  URL, so a screen's URL is shareable/reloadable and survives the back
-  button. A Chart.js bar chart backs the trends screen.
+  URL, so a screen's URL is shareable/reloadable, survives the back button, and
+  paginated screens (Sessions, Anomalies) carry `page`/`page_size` the same way.
+  A Chart.js bar chart backs the trends screen.
+- `shared/` — `activity-analytics-shared-types`, a `file:`-dependency package
+  holding the API response interfaces (`UserSummary`, `TrendPair`,
+  `SessionSummary`, `AnomalyEvent`, `Page<T>`) both packages import, so a field
+  rename fails the other side's typecheck instead of silently drifting.
 - `docs/data-source.md` — structural analysis of the real CSV (schema, value ranges,
   the unquoted-JSON parsing edge case).
-- `docs/tasks.md` — the implementation task breakdown this was built against.
+- `docs/tasks-mvp.md` — the original 2-hour build's task breakdown, frozen as a
+  historical record.
+- `docs/roadmap.md` — the hardening phases this repo is currently worked against.
 
 ## Setup & run
 
 Requires Node.js 18+ (uses the built-in `fetch`).
 
-**Backend** (starts on `http://localhost:4000`, fetches the CSV on startup):
+**Backend** (starts on `http://localhost:4000` by default, fetches the CSV on startup):
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+Set `PORT` to run on a different port (e.g. `PORT=4100 npm run dev`). If you change
+it, update `frontend/vite.config.ts`'s proxy targets to match — the frontend dev
+server doesn't read `PORT` itself.
 
 **Frontend** (starts on `http://localhost:5173`, proxies `/summary`,
 `/action_trends`, `/sessions`, `/anomalies`, `/users`, `/health`, `/load` to the
@@ -42,9 +57,8 @@ other endpoints return `503`.
 
 ```bash
 cd backend && npm test    # vitest: unit + supertest integration, fixture CSV, no network
-cd frontend && npm test   # vitest: currently 0 test files (passWithNoTests) —
-                           # real frontend tests land in Phase 4 once components
-                           # are extracted into testable units, see docs/roadmap.md
+cd frontend && npm test   # vitest: useQuery, useUrlFilters, validation — component
+                           # logic extracted into testable hooks/units (Phase 4)
 ```
 
 ## API
@@ -159,6 +173,49 @@ from `/summary`'s "404 on nothing to show" behavior for a single-object response
 total_pages }` envelope as `/sessions` (see `docs/roadmap.md` Phase 3) for
 consistency between the two sibling list endpoints, even though only `/sessions`'s
 result set strictly needed pagination.
+
+## Evolution: 2-hour MVP → hardening phases
+
+The MVP (frozen in `docs/tasks-mvp.md`) worked, but it was built under a clock:
+one file per side, hand-verified by curl, no tests, hand-mirrored types. The
+phases below (full detail in `docs/roadmap.md`) turned that into something
+safe to keep changing.
+
+1. **Backend seams.** The server couldn't be tested because `listen()` fired at
+   import time and a module-level singleton store made every test share state.
+   Splitting `app.ts` (routes) from `server.ts` (bootstrap) and injecting the
+   store as a parameter unlocked integration testing without a real port.
+2. **Tests.** Every invariant — the session boundary, population stddev,
+   the `/summary`-vs-list-endpoint 404 asymmetry — existed only as something
+   the author remembered correctly. Wiring up vitest with a fixture CSV meant
+   a future refactor that breaks one of those now fails loudly instead of
+   silently.
+3. **API contracts.** `/sessions` returned every session at once and
+   `/action_trends` hardcoded "top 3" in the UI. Adding `/users`, `/health`,
+   a configurable `limit`, and a paginated envelope made the API describe
+   itself instead of requiring the frontend to guess its shape.
+4. **Frontend seams.** Three near-identical forms each re-implemented
+   validation, loading state, and a timezone bug (`datetime-local` silently
+   reinterpreted as browser-local, not UTC). Extracting `useQuery`,
+   `<ActivityFilters/>`, and a shared API-client helper collapsed the
+   duplication and fixed the bug in one place instead of three.
+5. **Routing.** Every screen lived behind one giant form-switcher component,
+   so a filtered view had no URL to share or reload. Moving to react-router
+   with filters serialized into the query string made every screen
+   deep-linkable and made the back button work.
+6. **Pagination UI.** `/sessions` and `/anomalies` could return hundreds of
+   rows with no way to page through them client-side. A shared
+   `<Pagination/>` component wired to the URL's `page`/`page_size` — plus
+   clamping an out-of-range deep link back onto the real last page — closed
+   that gap.
+7. **Polish (in progress).** Cross-cutting cleanup that didn't belong to any
+   single feature: `backend/src/types.ts` and `frontend/src/types.ts` had
+   hand-mirrored the same five interfaces since the MVP, so a field rename on
+   one side could silently drift from the other with no compiler error. A
+   `shared/` package (`activity-analytics-shared-types`, `file:` dependency
+   on both sides) now holds those types once. CSS restructuring, responsive
+   layout, user autocomplete, empty/error states, and accessibility passes
+   are still open — see `docs/roadmap.md`.
 
 ## AI tool usage
 

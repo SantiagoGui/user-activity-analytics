@@ -1,4 +1,6 @@
-// Shared types for the activity log domain.
+// Internal domain types. API response shapes (SessionSummary, AnomalyEvent,
+// UserSummary, TrendPair, Page<T>) live in the shared package
+// (activity-analytics-shared-types) since the frontend depends on them too.
 
 /** The 3 base actions carry only page+duration; search/download/upload add one field each. */
 export interface ActivityMetadata {
@@ -26,17 +28,4 @@ export interface LoadResult {
 
 export interface ApiError {
   error: string;
-}
-
-export interface SessionSummary {
-  start: string;
-  end: string;
-  actions: number;
-  total_duration: number;
-}
-
-export interface AnomalyEvent {
-  timestamp: string;
-  action: string;
-  duration: number;
 }
