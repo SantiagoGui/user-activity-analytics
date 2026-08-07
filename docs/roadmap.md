@@ -193,8 +193,18 @@ or submit logic, and a fast double-submit can't render a stale response.
 - [x] Responsive layout. The MVP explicitly skipped this (spec didn't require it);
       it's now worth doing. Below 900px the rail collapses to a `<details>`
       disclosure above the results, open by default until a result exists.
-      Session timeline (design doc's "Signature" section) deferred to a later
-      phase.
+- [x] Session timeline (design doc's "Signature" section) — a horizontal
+      strip above the Sessions table, each session a bar positioned at its
+      real start with width proportional to its own span (`end - start`).
+      `/sessions` gained `range_start`/`range_end` on the envelope (first
+      session's start, last session's end across the *full*, pre-pagination
+      list — derived for free since `computeSessions` already returns
+      sessions in chronological order) so the axis stays fixed as you
+      paginate, instead of rescaling per page. Bars for sessions outside the
+      current page are not drawn — the envelope only carries the two range
+      scalars, not every session's position, and adding that was judged not
+      worth the complexity. Anomalies' duration-distribution strip is a
+      separate, still-open item.
 - [ ] User autocomplete backed by `GET /users`.
 - [ ] Real empty and error states per screen, not a bare `<p>`.
 - [ ] Accessibility: `role="alert"` on errors, `aria-busy` on submit, labels tied to

@@ -10,6 +10,13 @@ export function formatTimestamp(iso: string): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
 }
 
+/** e.g. "2024-01-05T07:03:25Z" -> "2024-01-05" — axis labels on the session timeline. */
+export function formatDateOnly(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
 /**
  * e.g. 100 -> "1m 40s", 45 -> "45s".
  *

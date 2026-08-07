@@ -67,6 +67,9 @@ describe('GET /sessions and /anomalies', () => {
   // Phase 3 change: /sessions now returns the paginated envelope
   // { items, page, page_size, total, total_pages } instead of a bare array
   // (docs/roadmap.md Phase 3). The session list itself is unchanged.
+  // Phase 7b adds range_start/range_end — the first session's start and the
+  // last session's end across the *full* (pre-pagination) list, so the
+  // frontend timeline's axis stays fixed as you paginate.
   it('/sessions 200s with the paginated session envelope for a known user', async () => {
     const res = await request(app).get('/sessions?user_id=1');
     expect(res.status).toBe(200);
@@ -79,6 +82,8 @@ describe('GET /sessions and /anomalies', () => {
       page_size: 20,
       total: 2,
       total_pages: 1,
+      range_start: '2024-01-01T09:00:00Z',
+      range_end: '2024-01-01T10:00:00Z',
     });
   });
 
@@ -104,7 +109,15 @@ describe('GET /sessions and /anomalies', () => {
       '/sessions?user_id=1&start_time=2030-01-01T00:00:00Z&end_time=2030-01-02T00:00:00Z',
     );
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ items: [], page: 1, page_size: 20, total: 0, total_pages: 0 });
+    expect(res.body).toEqual({
+      items: [],
+      page: 1,
+      page_size: 20,
+      total: 0,
+      total_pages: 0,
+      range_start: null,
+      range_end: null,
+    });
   });
 
   // New in Phase 3: page/page_size are honored, and an out-of-range page
@@ -113,12 +126,29 @@ describe('GET /sessions and /anomalies', () => {
   it('/sessions honors page/page_size and handles an out-of-range page', async () => {
     const firstPage = await request(app).get('/sessions?user_id=1&page=1&page_size=1');
     expect(firstPage.status).toBe(200);
-    expect(firstPage.body).toMatchObject({ page: 1, page_size: 1, total: 2, total_pages: 2 });
+    expect(firstPage.body).toMatchObject({
+      page: 1,
+      page_size: 1,
+      total: 2,
+      total_pages: 2,
+      range_start: '2024-01-01T09:00:00Z',
+      range_end: '2024-01-01T10:00:00Z',
+    });
     expect(firstPage.body.items).toHaveLength(1);
 
+    // range_start/range_end stay fixed across pages — derived from the full
+    // session list, not the page slice.
     const outOfRange = await request(app).get('/sessions?user_id=1&page=99&page_size=1');
     expect(outOfRange.status).toBe(200);
-    expect(outOfRange.body).toEqual({ items: [], page: 99, page_size: 1, total: 2, total_pages: 2 });
+    expect(outOfRange.body).toEqual({
+      items: [],
+      page: 99,
+      page_size: 1,
+      total: 2,
+      total_pages: 2,
+      range_start: '2024-01-01T09:00:00Z',
+      range_end: '2024-01-01T10:00:00Z',
+    });
   });
 
   it('400s on an invalid page or page_size', async () => {

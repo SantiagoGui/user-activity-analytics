@@ -5,7 +5,7 @@ import type { ActivityStore } from './store';
 import { parseTimeRange, parseRequiredUserId, parsePagination, parseLimit } from './validation';
 import { HttpError } from './errors';
 import { computeUserSummary, computeActionTrends } from './analytics';
-import { computeSessions } from './sessions';
+import { computeSessions, sessionsRange } from './sessions';
 import { computeAnomalies } from './anomalies';
 import { paginate } from './pagination';
 
@@ -95,7 +95,7 @@ export function createApp(store: ActivityStore): express.Express {
     try {
       const { page, pageSize } = parsePagination(req.query as Record<string, unknown>);
       const sessions = computeSessions(res.locals.events!);
-      res.json(paginate(sessions, page, pageSize));
+      res.json({ ...paginate(sessions, page, pageSize), ...sessionsRange(sessions) });
     } catch (err) {
       next(err);
     }

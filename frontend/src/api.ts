@@ -1,4 +1,4 @@
-import type { AnomalyEvent, Page, SessionSummary, TrendPair, UserSummary } from './types';
+import type { AnomalyEvent, Page, SessionsPage, TrendPair, UserSummary } from './types';
 
 /** Requests are relative paths, proxied to the backend by Vite's dev server config. */
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
@@ -43,7 +43,7 @@ export function fetchActionTrends(
 export function fetchSessions(
   params: { userId: number; startTime?: string; endTime?: string; page?: number; pageSize?: number },
   signal?: AbortSignal,
-): Promise<Page<SessionSummary>> {
+): Promise<SessionsPage> {
   const query = buildQuery({
     user_id: params.userId,
     start_time: params.startTime,
@@ -51,7 +51,7 @@ export function fetchSessions(
     page: params.page,
     page_size: params.pageSize,
   });
-  return getJson<Page<SessionSummary>>(`/sessions?${query}`, signal);
+  return getJson<SessionsPage>(`/sessions?${query}`, signal);
 }
 
 // Same envelope as /sessions, per the Phase 3 decision to keep sibling list

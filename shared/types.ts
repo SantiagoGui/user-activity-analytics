@@ -38,3 +38,13 @@ export interface Page<T> {
   total: number;
   total_pages: number;
 }
+
+// /sessions-only extension of Page<SessionSummary>: the earliest start and
+// latest end across the *full* session list for the query, not just the
+// current page — lets the frontend draw a timeline axis that stays fixed as
+// you paginate (see docs/design.md's "Signature: the session timeline").
+// Null when there are no sessions in range.
+export interface SessionsPage extends Page<SessionSummary> {
+  range_start: string | null;
+  range_end: string | null;
+}

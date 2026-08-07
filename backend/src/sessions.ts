@@ -50,3 +50,14 @@ export function computeSessions(events: ActivityEvent[]): SessionSummary[] {
 
   return sessions;
 }
+
+/**
+ * The earliest start and latest end across the full session list — cheap to
+ * derive because computeSessions already returns sessions in chronological
+ * order (events come in sorted ascending), so the first session's start and
+ * the last session's end are the extremes; no scan needed.
+ */
+export function sessionsRange(sessions: SessionSummary[]): { range_start: string | null; range_end: string | null } {
+  if (sessions.length === 0) return { range_start: null, range_end: null };
+  return { range_start: sessions[0]!.start, range_end: sessions[sessions.length - 1]!.end };
+}

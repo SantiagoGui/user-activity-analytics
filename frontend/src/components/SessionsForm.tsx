@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { fetchSessions } from '../api';
 import { useUrlFilters } from '../hooks/useUrlFilters';
-import type { Page, SessionSummary } from '../types';
+import type { SessionsPage } from '../types';
 import { formatDuration, formatTimestamp } from '../format';
 import { ActivityFilters } from './ActivityFilters';
 import { Pagination } from './Pagination';
 import { ScreenLayout } from './ScreenLayout';
+import { SessionTimeline, sessionKey } from './SessionTimeline';
 
 export function SessionsForm() {
   const {
@@ -18,7 +20,7 @@ export function SessionsForm() {
     pageSize,
     setPage,
     setPageSize,
-  } = useUrlFilters<Page<SessionSummary>>(
+  } = useUrlFilters<SessionsPage>(
     true,
     (filters, signal) =>
       fetchSessions(
@@ -33,6 +35,8 @@ export function SessionsForm() {
       ),
     { paginated: true },
   );
+
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   return (
     <ScreenLayout
@@ -51,6 +55,15 @@ export function SessionsForm() {
       {sessions && sessions.items.length === 0 && (
         <p className="empty-state">No sessions in this range. Try widening the dates or another user.</p>
       )}
+      {sessions && sessions.items.length > 0 && sessions.range_start && sessions.range_end && (
+        <SessionTimeline
+          sessions={sessions.items}
+          rangeStart={sessions.range_start}
+          rangeEnd={sessions.range_end}
+          hoveredKey={hoveredKey}
+          onHoverChange={setHoveredKey}
+        />
+      )}
       {sessions && sessions.items.length > 0 && (
         <div className="table-wrap">
           <table>
@@ -63,14 +76,22 @@ export function SessionsForm() {
               </tr>
             </thead>
             <tbody>
-              {sessions.items.map((s) => (
-                <tr key={`${s.start}|${s.end}`}>
-                  <td className="timestamp">{formatTimestamp(s.start)}</td>
-                  <td className="timestamp">{formatTimestamp(s.end)}</td>
-                  <td className="numeric">{s.actions}</td>
-                  <td className="numeric">{formatDuration(s.total_duration)}</td>
-                </tr>
-              ))}
+              {sessions.items.map((s) => {
+                const key = sessionKey(s);
+                return (
+                  <tr
+                    key={key}
+                    className={hoveredKey === key ? 'hovered' : undefined}
+                    onMouseEnter={() => setHoveredKey(key)}
+                    onMouseLeave={() => setHoveredKey(null)}
+                  >
+                    <td className="timestamp">{formatTimestamp(s.start)}</td>
+                    <td className="timestamp">{formatTimestamp(s.end)}</td>
+                    <td className="numeric">{s.actions}</td>
+                    <td className="numeric">{formatDuration(s.total_duration)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

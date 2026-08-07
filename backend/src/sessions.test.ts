@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSessions } from './sessions';
+import { computeSessions, sessionsRange } from './sessions';
 import type { ActivityEvent } from './types';
 
 function event(timestamp: string, duration: number, action = 'click'): ActivityEvent {
@@ -46,5 +46,32 @@ describe('computeSessions', () => {
 
   it('returns an empty array for empty input', () => {
     expect(computeSessions([])).toEqual([]);
+  });
+});
+
+describe('sessionsRange', () => {
+  it('returns nulls for an empty session list', () => {
+    expect(sessionsRange([])).toEqual({ range_start: null, range_end: null });
+  });
+
+  it('returns the first session start and last session end', () => {
+    const events = [
+      event('2024-01-01T12:00:00Z', 10, 'login'),
+      event('2024-01-01T12:25:00Z', 20, 'click'),
+      event('2024-01-01T13:00:00Z', 30, 'view'),
+    ];
+    const sessions = computeSessions(events);
+    expect(sessionsRange(sessions)).toEqual({
+      range_start: '2024-01-01T12:00:00Z',
+      range_end: '2024-01-01T13:00:00Z',
+    });
+  });
+
+  it('matches the single session bounds for one session', () => {
+    const sessions = computeSessions([event('2024-01-01T12:00:00Z', 5)]);
+    expect(sessionsRange(sessions)).toEqual({
+      range_start: '2024-01-01T12:00:00Z',
+      range_end: '2024-01-01T12:00:00Z',
+    });
   });
 });
