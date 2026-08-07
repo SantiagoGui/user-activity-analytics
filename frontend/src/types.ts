@@ -9,4 +9,5 @@ export type {
   AnomalyEvent,
   Page,
   SessionsPage,
+  UserCount,
 } from 'activity-analytics-shared-types';

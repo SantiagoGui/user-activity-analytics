@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { validateFilters } from '../validation';
 import { datetimeLocalToUtcIso } from '../time';
+import { useUsers } from '../hooks/useUsers';
 
 export interface FilterValues {
   userId?: number;
@@ -41,6 +42,7 @@ export function ActivityFilters({
   const [startTime, setStartTime] = useState(initialValues?.startTime ?? '');
   const [endTime, setEndTime] = useState(initialValues?.endTime ?? '');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const users = useUsers(requireUserId);
 
   useEffect(() => {
     if (!initialValues) return;
@@ -68,30 +70,50 @@ export function ActivityFilters({
   return (
     <form onSubmit={handleSubmit}>
       {requireUserId && (
-        <label>
+        <label htmlFor="filter-user">
           User
           <input
+            id="filter-user"
             type="number"
             min="1"
             step="1"
+            list="known-users"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
             required
           />
         </label>
       )}
-      <label>
+      {requireUserId && (
+        <datalist id="known-users">
+          {users.map((u) => (
+            <option key={u.user_id} value={u.user_id}>
+              {u.count} events
+            </option>
+          ))}
+        </datalist>
+      )}
+      <label htmlFor="filter-start">
         From
-        <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+        <input
+          id="filter-start"
+          type="datetime-local"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+        />
       </label>
-      <label>
+      <label htmlFor="filter-end">
         To
-        <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+        <input id="filter-end" type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
       </label>
-      <button type="submit" disabled={loading}>
+      <button type="submit" disabled={loading} aria-busy={loading}>
         {loading ? 'Loading…' : 'Run query'}
       </button>
-      {validationError && <p className="error">{validationError}</p>}
+      {validationError && (
+        <p className="error" role="alert">
+          {validationError}
+        </p>
+      )}
     </form>
   );
 }

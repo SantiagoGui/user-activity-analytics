@@ -8,6 +8,7 @@ import { computeUserSummary, computeActionTrends } from './analytics';
 import { computeSessions, sessionsRange } from './sessions';
 import { computeAnomalies } from './anomalies';
 import { paginate } from './pagination';
+import type { UserCount } from 'activity-analytics-shared-types';
 
 function requireLoaded(store: ActivityStore): void {
   if (!store.isLoaded()) {
@@ -114,7 +115,7 @@ export function createApp(store: ActivityStore): express.Express {
   app.get('/users', (_req: Request, res: Response, next: NextFunction) => {
     try {
       requireLoaded(store);
-      const users = store.listUserCounts().map(({ userId, count }) => ({ user_id: userId, count }));
+      const users: UserCount[] = store.listUserCounts().map(({ userId, count }) => ({ user_id: userId, count }));
       res.json(users);
     } catch (err) {
       next(err);

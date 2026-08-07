@@ -205,10 +205,31 @@ or submit logic, and a fast double-submit can't render a stale response.
       scalars, not every session's position, and adding that was judged not
       worth the complexity. Anomalies' duration-distribution strip is a
       separate, still-open item.
-- [ ] User autocomplete backed by `GET /users`.
-- [ ] Real empty and error states per screen, not a bare `<p>`.
-- [ ] Accessibility: `role="alert"` on errors, `aria-busy` on submit, labels tied to
-      inputs, visible focus.
+- [x] User autocomplete backed by `GET /users`. Native `<input list=…>` +
+      `<datalist>` (`useUsers` hook, fetched once per screen mount, only when
+      `requireUserId` — Action Trends skips it). Fails silently: the field
+      still works as a plain number input if `/users` errors, since the
+      autocomplete is a convenience, not the screen's real query. `UserCount`
+      added to `shared/types.ts` so the backend's `/users` response is typed
+      instead of built as an inline object literal (JSON unchanged).
+- [x] Real empty and error states per screen. Sessions/Anomalies/Trends empty
+      copy landed in Phase 7a; this phase covers the error side —
+      `validateFilters` now says "User" instead of "User ID" (matches the
+      renamed label), and `api.ts`'s `getJson` gives directive copy for the
+      two generic failure paths instead of a raw browser message or a bare
+      status code: a network failure ("Couldn't reach the server. Check your
+      connection and try again.") and a response with no error body ("The
+      server had a problem. Try again."). Backend error messages (e.g. "No
+      data for user X") already named the problem and were left as-is.
+- [x] Accessibility: `role="alert"` added to `ActivityFilters`' inline
+      validation error (the four screens' query-error banners already had it
+      from Phase 7a). `aria-busy={loading}` on the submit button. Labels
+      switched from implicit wrapping to explicit `htmlFor`/`id` pairs — also
+      fixes a latent bug where the new `<datalist>`'s `<option>` text would
+      have been picked up into the "User" label's accessible name if left
+      nested inside a wrapping `<label>`. Visible focus extended to the nav
+      links and the pagination page-size `<select>`, which were previously
+      falling back to the browser's default (non-themed) outline.
 - [x] Shared types between packages — stop hand-mirroring `types.ts`. New
       `shared/` package (`activity-analytics-shared-types`, file: dependency
       in both `backend/package.json` and `frontend/package.json`) exports

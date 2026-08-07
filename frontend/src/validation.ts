@@ -15,9 +15,9 @@ export interface FiltersInput {
  */
 export function validateFilters({ userId, startTime, endTime, requireUserId }: FiltersInput): string | null {
   if (requireUserId) {
-    if (userId.trim() === '') return 'User ID is required.';
+    if (userId.trim() === '') return 'User is required.';
     const parsed = Number(userId);
-    if (!Number.isInteger(parsed) || parsed <= 0) return 'User ID must be a positive integer.';
+    if (!Number.isInteger(parsed) || parsed <= 0) return 'User must be a positive integer.';
   }
   if (startTime && endTime && startTime > endTime) {
     return 'Start time must not be after end time.';

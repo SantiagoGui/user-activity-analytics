@@ -30,6 +30,12 @@ export interface AnomalyEvent {
   duration: number;
 }
 
+// GET /users — powers the frontend's user autocomplete.
+export interface UserCount {
+  user_id: number;
+  count: number;
+}
+
 // Envelope for /sessions and /anomalies (see backend/src/pagination.ts).
 export interface Page<T> {
   items: T[];

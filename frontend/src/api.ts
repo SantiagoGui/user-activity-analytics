@@ -1,14 +1,25 @@
-import type { AnomalyEvent, Page, SessionsPage, TrendPair, UserSummary } from './types';
+import type { AnomalyEvent, Page, SessionsPage, TrendPair, UserCount, UserSummary } from './types';
 
-/** Requests are relative paths, proxied to the backend by Vite's dev server config. */
+/**
+ * Requests are relative paths, proxied to the backend by Vite's dev server
+ * config. Both failure paths get copy that names the problem and what to do
+ * about it (docs/design.md's Copy section), instead of a raw browser message
+ * ("Failed to fetch") or a bare status code.
+ */
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(path, { signal });
+  let res: Response;
+  try {
+    res = await fetch(path, { signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw new Error("Couldn't reach the server. Check your connection and try again.");
+  }
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const message =
       body !== null && typeof body === 'object' && 'error' in body && typeof (body as { error: unknown }).error === 'string'
         ? (body as { error: string }).error
-        : `Request failed with status ${res.status}`;
+        : 'The server had a problem. Try again.';
     throw new Error(message);
   }
   return body as T;
@@ -21,6 +32,11 @@ function buildQuery(params: Record<string, string | number | undefined>): string
     if (value !== undefined && value !== '') qs.set(key, String(value));
   }
   return qs.toString();
+}
+
+/** Powers the User field's autocomplete. */
+export function fetchUsers(signal?: AbortSignal): Promise<UserCount[]> {
+  return getJson<UserCount[]>('/users', signal);
 }
 
 export function fetchUserSummary(
