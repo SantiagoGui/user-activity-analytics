@@ -1,18 +1,5 @@
 import type { ActivityEvent } from './types';
-
-export interface UserSummary {
-  user_id: number;
-  total_actions: number;
-  most_frequent_action: string;
-  avg_duration: number;
-  most_frequent_page: string;
-}
-
-export interface TrendPair {
-  user_id: number;
-  action: string;
-  count: number;
-}
+import type { UserSummary, TrendPair } from 'activity-analytics-shared-types';
 
 /** Map preserves insertion order, and we insert in chronological (per-user sorted)
  *  order, so the first key to reach the max count is deterministically the

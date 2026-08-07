@@ -1,4 +1,5 @@
-import type { ActivityEvent, SessionSummary } from './types';
+import type { ActivityEvent } from './types';
+import type { SessionSummary } from 'activity-analytics-shared-types';
 
 const SESSION_GAP_MS = 30 * 60 * 1000;
 
