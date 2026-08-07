@@ -4,6 +4,7 @@ import type { AnomalyEvent, Page } from '../types';
 import { formatDuration, formatTimestamp } from '../format';
 import { ActivityFilters } from './ActivityFilters';
 import { Pagination } from './Pagination';
+import { ScreenLayout } from './ScreenLayout';
 
 export function AnomaliesForm() {
   const {
@@ -34,36 +35,43 @@ export function AnomaliesForm() {
   );
 
   return (
-    <section className="card">
-      <h2>Anomalies</h2>
-      <ActivityFilters
-        initialValues={initialValues}
-        loading={loading}
-        onSubmit={handleSubmit}
-        onInvalid={reset}
-      />
-
-      {error && <p className="error">{error}</p>}
-      {anomalies && anomalies.items.length === 0 && <p>No anomalies found for this user.</p>}
+    <ScreenLayout
+      title="Anomalies"
+      hasResult={anomalies !== null}
+      filters={
+        <ActivityFilters
+          initialValues={initialValues}
+          loading={loading}
+          onSubmit={handleSubmit}
+          onInvalid={reset}
+        />
+      }
+    >
+      {error && <p className="error" role="alert">{error}</p>}
+      {anomalies && anomalies.items.length === 0 && (
+        <p className="empty-state">No anomalies in this range. Try widening the dates or another user.</p>
+      )}
       {anomalies && anomalies.items.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Action</th>
-              <th>Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {anomalies.items.map((a) => (
-              <tr key={`${a.timestamp}|${a.action}`}>
-                <td>{formatTimestamp(a.timestamp)}</td>
-                <td>{a.action}</td>
-                <td>{formatDuration(a.duration)}</td>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th className="numeric">Duration</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {anomalies.items.map((a) => (
+                <tr key={`${a.timestamp}|${a.action}`}>
+                  <td className="timestamp">{formatTimestamp(a.timestamp)}</td>
+                  <td>{a.action}</td>
+                  <td className="numeric">{formatDuration(a.duration)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {anomalies && anomalies.total > 0 && (
         <Pagination
@@ -75,6 +83,6 @@ export function AnomaliesForm() {
           onPageSizeChange={setPageSize}
         />
       )}
-    </section>
+    </ScreenLayout>
   );
 }

@@ -4,6 +4,7 @@ import type { Page, SessionSummary } from '../types';
 import { formatDuration, formatTimestamp } from '../format';
 import { ActivityFilters } from './ActivityFilters';
 import { Pagination } from './Pagination';
+import { ScreenLayout } from './ScreenLayout';
 
 export function SessionsForm() {
   const {
@@ -34,38 +35,45 @@ export function SessionsForm() {
   );
 
   return (
-    <section className="card">
-      <h2>Sessions</h2>
-      <ActivityFilters
-        initialValues={initialValues}
-        loading={loading}
-        onSubmit={handleSubmit}
-        onInvalid={reset}
-      />
-
-      {error && <p className="error">{error}</p>}
-      {sessions && sessions.items.length === 0 && <p>No sessions found for this user.</p>}
+    <ScreenLayout
+      title="Sessions"
+      hasResult={sessions !== null}
+      filters={
+        <ActivityFilters
+          initialValues={initialValues}
+          loading={loading}
+          onSubmit={handleSubmit}
+          onInvalid={reset}
+        />
+      }
+    >
+      {error && <p className="error" role="alert">{error}</p>}
+      {sessions && sessions.items.length === 0 && (
+        <p className="empty-state">No sessions in this range. Try widening the dates or another user.</p>
+      )}
       {sessions && sessions.items.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Start</th>
-              <th>End</th>
-              <th>Actions</th>
-              <th>Total duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.items.map((s) => (
-              <tr key={`${s.start}|${s.end}`}>
-                <td>{formatTimestamp(s.start)}</td>
-                <td>{formatTimestamp(s.end)}</td>
-                <td>{s.actions}</td>
-                <td>{formatDuration(s.total_duration)}</td>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Start</th>
+                <th>End</th>
+                <th className="numeric">Actions</th>
+                <th className="numeric">Total duration</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sessions.items.map((s) => (
+                <tr key={`${s.start}|${s.end}`}>
+                  <td className="timestamp">{formatTimestamp(s.start)}</td>
+                  <td className="timestamp">{formatTimestamp(s.end)}</td>
+                  <td className="numeric">{s.actions}</td>
+                  <td className="numeric">{formatDuration(s.total_duration)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {sessions && sessions.total > 0 && (
         <Pagination
@@ -77,6 +85,6 @@ export function SessionsForm() {
           onPageSizeChange={setPageSize}
         />
       )}
-    </section>
+    </ScreenLayout>
   );
 }

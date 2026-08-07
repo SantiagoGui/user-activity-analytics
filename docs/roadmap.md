@@ -183,10 +183,18 @@ or submit logic, and a fast double-submit can't render a stale response.
 
 ## Phase 7 — Polish
 
-- [ ] CSS restructured — design tokens, scoped styles. Element selectors (`button`,
-      `input`, `table`) stop being global.
-- [ ] Responsive layout. The MVP explicitly skipped this (spec didn't require it);
-      it's now worth doing.
+- [x] CSS restructured — design tokens, scoped styles. Element selectors (`button`,
+      `input`, `table`) stop being global. Follows `docs/design.md`: palette,
+      type scale, and 4px spacing scale as `:root` custom properties; filters
+      move into a persistent left rail (`ScreenLayout`) instead of living
+      inside each result card. Fixed alongside it: `formatDuration`'s
+      `seconds % 60` float leak (`2m 35.08000000000001s`), rounded to 2
+      decimals with a carry into minutes.
+- [x] Responsive layout. The MVP explicitly skipped this (spec didn't require it);
+      it's now worth doing. Below 900px the rail collapses to a `<details>`
+      disclosure above the results, open by default until a result exists.
+      Session timeline (design doc's "Signature" section) deferred to a later
+      phase.
 - [ ] User autocomplete backed by `GET /users`.
 - [ ] Real empty and error states per screen, not a bare `<p>`.
 - [ ] Accessibility: `role="alert"` on errors, `aria-busy` on submit, labels tied to

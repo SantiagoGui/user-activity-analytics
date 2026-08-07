@@ -14,20 +14,24 @@ export function Layout() {
   const location = useLocation();
 
   return (
-    <main>
-      <h1>User Activity Log Analytics</h1>
-      <nav>
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={{ pathname: item.to, search: location.search }}
-            className={({ isActive }) => (isActive ? 'active' : undefined)}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-      <Outlet />
-    </main>
+    <>
+      <header className="app-header">
+        <span className="brand">Activity Analytics</span>
+        <nav className="app-nav">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={{ pathname: item.to, search: location.search }}
+              className={({ isActive }) => (isActive ? 'active' : undefined)}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </header>
+      <main className="app-content">
+        <Outlet />
+      </main>
+    </>
   );
 }

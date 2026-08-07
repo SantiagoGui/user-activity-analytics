@@ -11,7 +11,7 @@ export function ActionTrendsChart({ trends }: { trends: TrendPair[] }) {
       {
         label: 'Occurrences',
         data: trends.map((t) => t.count),
-        backgroundColor: '#3b6ea5',
+        backgroundColor: '#57449a',
       },
     ],
   };

@@ -69,7 +69,7 @@ export function ActivityFilters({
     <form onSubmit={handleSubmit}>
       {requireUserId && (
         <label>
-          User ID
+          User
           <input
             type="number"
             min="1"
@@ -81,15 +81,15 @@ export function ActivityFilters({
         </label>
       )}
       <label>
-        Start time (optional)
+        From
         <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
       </label>
       <label>
-        End time (optional)
+        To
         <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
       </label>
       <button type="submit" disabled={loading}>
-        {loading ? 'Loading…' : 'Submit'}
+        {loading ? 'Loading…' : 'Run query'}
       </button>
       {validationError && <p className="error">{validationError}</p>}
     </form>
