@@ -15,13 +15,22 @@ now in a second, unhurried phase hardening that MVP into a tested, multi-screen 
   layout with nav, a filter component, and a query hook. Filters live in the
   URL, so a screen's URL is shareable/reloadable, survives the back button, and
   paginated screens (Sessions, Anomalies) carry `page`/`page_size` the same way.
-  A Chart.js bar chart backs the trends screen.
+  Filters render as a persistent left rail beside the results (collapsing to a
+  disclosure above them below 900px), styled from the design-token palette in
+  [docs/design.md](docs/design.md) — every color, type size, and spacing value
+  in the CSS traces back to that doc. The Sessions screen adds a horizontal
+  timeline strip above its table: each session is a bar positioned at its real
+  start with width proportional to its own span, on an axis that stays fixed
+  as you paginate (see "API" below). A Chart.js bar chart backs the trends
+  screen.
 - `shared/` — `activity-analytics-shared-types`, a `file:`-dependency package
   holding the API response interfaces (`UserSummary`, `TrendPair`,
   `SessionSummary`, `AnomalyEvent`, `Page<T>`) both packages import, so a field
   rename fails the other side's typecheck instead of silently drifting.
 - `docs/data-source.md` — structural analysis of the real CSV (schema, value ranges,
   the unquoted-JSON parsing edge case).
+- `docs/design.md` — the design direction for Phase 7's UI work: palette, type
+  scale, spacing, layout, and copy. Every CSS decision traces back to it.
 - `docs/tasks-mvp.md` — the original 2-hour build's task breakdown, frozen as a
   historical record.
 - `docs/roadmap.md` — the hardening phases this repo is currently worked against.
@@ -73,11 +82,16 @@ cd frontend && npm test   # vitest: useQuery, useUrlFilters, validation — comp
   *(bonus)* — `user_id` required. Groups that user's events (after time filtering)
   into sessions wherever the gap since the previous action is ≤30 min; returns the
   paginated envelope `{ items: { start, end, actions, total_duration }[], page,
-  page_size, total, total_pages }`. `page` defaults to 1, `page_size` to 20 (capped
-  at 100); an out-of-range `page` returns `items: []` with accurate
-  `total`/`total_pages`, not a `400`. `404` only if the user has no data at all — a
-  known user with zero sessions *in range* returns `200` with `items: []`, since an
-  empty result is a normal answer for a list endpoint (see below).
+  page_size, total, total_pages, range_start, range_end }`. `page` defaults to 1,
+  `page_size` to 20 (capped at 100); an out-of-range `page` returns `items: []` with
+  accurate `total`/`total_pages`, not a `400`. `404` only if the user has no data at
+  all — a known user with zero sessions *in range* returns `200` with `items: []`
+  (and `range_start`/`range_end: null`), since an empty result is a normal answer
+  for a list endpoint (see below). `range_start`/`range_end` are the first session's
+  start and the last session's end across the *full* session list for the query, not
+  just the current page — computed for free from the already-chronological list
+  (no re-scan), so the frontend's timeline axis stays fixed as you paginate instead
+  of rescaling to whatever's on the current page.
 - `GET /anomalies?user_id=<int>&start_time=<ISO8601>&end_time=<ISO8601>&page=<int>&page_size=<int>`
   *(bonus)* — `user_id` required. Per `(user_id, action)` pair, flags durations more
   than 2 population-standard-deviations from that pair's mean; returns the **same
@@ -86,7 +100,8 @@ cd frontend && npm test   # vitest: useQuery, useUrlFilters, validation — comp
   between the two sibling list endpoints, even though only `/sessions` strictly
   needed pagination. Same `200`-with-empty-`items` vs `404` semantics as `/sessions`.
 - `GET /users` — every known `user_id` with its event count, sorted ascending;
-  `[{ user_id, count }]`. Powers the frontend's (future) user autocomplete.
+  `[{ user_id, count }]`. Powers the frontend's User field autocomplete
+  (a native `<datalist>`, fetched once per screen that has a user field).
 - `GET /health` — `{ loaded, total_lines, rows_loaded, rows_skipped, skipped_reasons }`.
   The one endpoint that does **not** 503 before a successful load — reporting
   `loaded: false` (with the numeric fields `null`) is its normal, expected response
@@ -208,14 +223,26 @@ safe to keep changing.
    `<Pagination/>` component wired to the URL's `page`/`page_size` — plus
    clamping an out-of-range deep link back onto the real last page — closed
    that gap.
-7. **Polish (in progress).** Cross-cutting cleanup that didn't belong to any
-   single feature: `backend/src/types.ts` and `frontend/src/types.ts` had
-   hand-mirrored the same five interfaces since the MVP, so a field rename on
-   one side could silently drift from the other with no compiler error. A
-   `shared/` package (`activity-analytics-shared-types`, `file:` dependency
-   on both sides) now holds those types once. CSS restructuring, responsive
-   layout, user autocomplete, empty/error states, and accessibility passes
-   are still open — see `docs/roadmap.md`.
+7. **Polish.** Cross-cutting cleanup that didn't belong to any single feature.
+   `backend/src/types.ts` and `frontend/src/types.ts` had hand-mirrored the
+   same five interfaces since the MVP, so a field rename on one side could
+   silently drift from the other with no compiler error — a `shared/` package
+   (`activity-analytics-shared-types`, `file:` dependency on both sides) now
+   holds those types once. The UI was rebuilt against a written design
+   direction ([docs/design.md](docs/design.md)) instead of ad hoc styling:
+   design tokens replaced hardcoded colors/sizes, global element selectors
+   (`button`, `input`, `table`) became scoped classes, and filters moved from
+   a block inside each result card into a persistent left rail that collapses
+   to a disclosure below 900px. The Sessions screen gained its signature
+   visualization — a timeline strip of session bars — which needed
+   `/sessions` to expose `range_start`/`range_end` so the axis wouldn't
+   rescale on every page change. Also landed: a `GET /users`-backed
+   autocomplete on the User field, directive copy for empty and error states
+   (naming what happened and what to do about it, not "Something went
+   wrong"), and an accessibility pass (`role="alert"`, `aria-busy`, explicit
+   label associations, visible focus everywhere). See `docs/roadmap.md`'s
+   Phase 7 for the full list, including what's still open (this README
+   section).
 
 ## AI tool usage
 
