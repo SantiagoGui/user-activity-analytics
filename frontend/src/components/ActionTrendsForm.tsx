@@ -4,6 +4,7 @@ import type { TrendPair } from '../types';
 import { ActivityFilters } from './ActivityFilters';
 import { ActionTrendsChart } from './ActionTrendsChart';
 import { ScreenLayout } from './ScreenLayout';
+import { Skeleton } from './Skeleton';
 
 export function ActionTrendsForm() {
   const { data: trends, loading, error, reset, initialValues, handleSubmit } = useUrlFilters<TrendPair[]>(
@@ -26,10 +27,18 @@ export function ActionTrendsForm() {
       }
     >
       {error && <p className="error" role="alert">{error}</p>}
-      {trends && trends.length === 0 && (
-        <p className="empty-state">No data in this range. Try widening the dates.</p>
+      {loading && !trends && <Skeleton rows={5} />}
+      {trends && (
+        <div
+          className="result-region"
+          key={`${initialValues.userId}|${initialValues.startTime}|${initialValues.endTime}`}
+        >
+          {trends.length === 0 && (
+            <p className="empty-state">No data in this range. Try widening the dates.</p>
+          )}
+          {trends.length > 0 && <ActionTrendsChart trends={trends} />}
+        </div>
       )}
-      {trends && trends.length > 0 && <ActionTrendsChart trends={trends} />}
     </ScreenLayout>
   );
 }

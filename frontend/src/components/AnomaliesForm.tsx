@@ -5,6 +5,7 @@ import { formatDuration, formatTimestamp } from '../format';
 import { ActivityFilters } from './ActivityFilters';
 import { Pagination } from './Pagination';
 import { ScreenLayout } from './ScreenLayout';
+import { Skeleton } from './Skeleton';
 
 export function AnomaliesForm() {
   const {
@@ -48,11 +49,15 @@ export function AnomaliesForm() {
       }
     >
       {error && <p className="error" role="alert">{error}</p>}
+      {loading && !anomalies && <Skeleton rows={5} />}
       {anomalies && anomalies.items.length === 0 && (
         <p className="empty-state">No anomalies in this range. Try widening the dates or another user.</p>
       )}
       {anomalies && anomalies.items.length > 0 && (
-        <div className="table-wrap">
+        <div
+          className="table-wrap result-region"
+          key={`${initialValues.userId}|${initialValues.startTime}|${initialValues.endTime}`}
+        >
           <table>
             <thead>
               <tr>

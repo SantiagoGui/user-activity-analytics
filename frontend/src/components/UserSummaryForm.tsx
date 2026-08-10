@@ -4,6 +4,7 @@ import type { UserSummary } from '../types';
 import { formatDuration } from '../format';
 import { ActivityFilters } from './ActivityFilters';
 import { ScreenLayout } from './ScreenLayout';
+import { Skeleton } from './Skeleton';
 
 export function UserSummaryForm() {
   const { data: result, loading, error, reset, initialValues, handleSubmit } = useUrlFilters<UserSummary>(
@@ -26,8 +27,13 @@ export function UserSummaryForm() {
     >
       {error && <p className="error" role="alert">{error}</p>}
 
+      {loading && !result && <Skeleton rows={1} />}
+
       {result && (
-        <dl className="stats">
+        <dl
+          className="stats result-region"
+          key={`${initialValues.userId}|${initialValues.startTime}|${initialValues.endTime}`}
+        >
           <div className="stat">
             <dt>Total actions</dt>
             <dd className="data">{result.total_actions}</dd>
