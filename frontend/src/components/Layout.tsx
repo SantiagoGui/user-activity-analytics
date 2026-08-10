@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Wordmark } from './Wordmark';
 
 const NAV_ITEMS = [
   { to: '/summary', label: 'User Summary' },
@@ -16,7 +17,10 @@ export function Layout() {
   return (
     <>
       <header className="app-header">
-        <span className="brand">Activity Analytics</span>
+        <span className="brand">
+          <Wordmark />
+          Activity Analytics
+        </span>
         <nav className="app-nav">
           {NAV_ITEMS.map((item) => (
             <NavLink
