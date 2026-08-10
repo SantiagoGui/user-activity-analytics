@@ -54,3 +54,6 @@ export interface SessionsPage extends Page<SessionSummary> {
   range_start: string | null;
   range_end: string | null;
 }
+
+// Time-bucket granularity for GET /overview's activity series.
+export type BucketSize = 'day' | 'week' | 'month';
