@@ -64,9 +64,9 @@ export function AnomaliesForm() {
             <tbody>
               {anomalies.items.map((a) => (
                 <tr key={`${a.timestamp}|${a.action}`}>
-                  <td className="timestamp">{formatTimestamp(a.timestamp)}</td>
+                  <td className="timestamp data">{formatTimestamp(a.timestamp)}</td>
                   <td>{a.action}</td>
-                  <td className="numeric">{formatDuration(a.duration)}</td>
+                  <td className="numeric data">{formatDuration(a.duration)}</td>
                 </tr>
               ))}
             </tbody>

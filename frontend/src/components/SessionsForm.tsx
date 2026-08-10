@@ -85,10 +85,10 @@ export function SessionsForm() {
                     onMouseEnter={() => setHoveredKey(key)}
                     onMouseLeave={() => setHoveredKey(null)}
                   >
-                    <td className="timestamp">{formatTimestamp(s.start)}</td>
-                    <td className="timestamp">{formatTimestamp(s.end)}</td>
-                    <td className="numeric">{s.actions}</td>
-                    <td className="numeric">{formatDuration(s.total_duration)}</td>
+                    <td className="timestamp data">{formatTimestamp(s.start)}</td>
+                    <td className="timestamp data">{formatTimestamp(s.end)}</td>
+                    <td className="numeric data">{s.actions}</td>
+                    <td className="numeric data">{formatDuration(s.total_duration)}</td>
                   </tr>
                 );
               })}

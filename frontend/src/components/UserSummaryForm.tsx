@@ -30,7 +30,7 @@ export function UserSummaryForm() {
         <dl className="stats">
           <div className="stat">
             <dt>Total actions</dt>
-            <dd>{result.total_actions}</dd>
+            <dd className="data">{result.total_actions}</dd>
           </div>
           <div className="stat">
             <dt>Most frequent action</dt>
@@ -38,7 +38,7 @@ export function UserSummaryForm() {
           </div>
           <div className="stat">
             <dt>Average duration</dt>
-            <dd>{formatDuration(result.avg_duration)}</dd>
+            <dd className="data">{formatDuration(result.avg_duration)}</dd>
           </div>
           <div className="stat">
             <dt>Most frequent page</dt>

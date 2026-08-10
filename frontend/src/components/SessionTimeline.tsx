@@ -48,7 +48,7 @@ export function SessionTimeline({ sessions, rangeStart, rangeEnd, hoveredKey, on
           );
         })}
       </div>
-      <div className="timeline-labels">
+      <div className="timeline-labels data">
         <span>{formatDateOnly(rangeStart)}</span>
         <span>{formatDateOnly(rangeEnd)}</span>
       </div>

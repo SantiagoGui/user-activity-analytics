@@ -18,6 +18,11 @@
   --text-xl: 1.5rem;
   --text-data: 1.75rem;
 
+  /* Data face — numbers, timestamps, durations, user IDs. UI text stays on the
+     system stack. See docs/design.md, Type: the instrument reading of the
+     tabular-numerals rule. */
+  --font-data: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
   /* Spacing scale — 4px base, only these steps */
   --space-1: 4px;
   --space-2: 8px;
@@ -31,6 +36,12 @@
 
 * {
   box-sizing: border-box;
+}
+
+.data {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'ss01';
 }
 
 body {

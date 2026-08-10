@@ -16,7 +16,7 @@ export function Pagination({ page, totalPages, pageSize, loading, onPageChange, 
       <button type="button" disabled={loading || page <= 1} onClick={() => onPageChange(page - 1)}>
         Previous
       </button>
-      <span>
+      <span className="data">
         Page {page} of {totalPages}
       </span>
       <button type="button" disabled={loading || page >= totalPages} onClick={() => onPageChange(page + 1)}>
