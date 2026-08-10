@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Wordmark } from './Wordmark';
 
 const NAV_ITEMS = [
+  { to: '/', label: 'Overview', end: true },
   { to: '/summary', label: 'User Summary' },
   { to: '/trends', label: 'Action Trends' },
   { to: '/sessions', label: 'Sessions' },
@@ -26,6 +27,7 @@ export function Layout() {
             <NavLink
               key={item.to}
               to={{ pathname: item.to, search: location.search }}
+              end={item.end}
               className={({ isActive }) => (isActive ? 'active' : undefined)}
             >
               {item.label}
