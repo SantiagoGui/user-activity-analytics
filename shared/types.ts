@@ -57,3 +57,29 @@ export interface SessionsPage extends Page<SessionSummary> {
 
 // Time-bucket granularity for GET /overview's activity series.
 export type BucketSize = 'day' | 'week' | 'month';
+
+// GET /overview — describes the dataset (or a time slice of it) rather than one
+// user. See docs/superpowers/specs/2026-08-10-overview-product-design.md.
+export interface ActivityBucket {
+  bucket_start: string;
+  count: number;
+}
+
+export interface ActionCount {
+  action: string;
+  count: number;
+}
+
+export interface Overview {
+  total_events: number;
+  total_users: number;
+  distinct_actions: number;
+  // Bounds of the events *within the requested range*, null when it's empty.
+  // The full dataset's bounds live on /health, which is filter-independent.
+  range_start: string | null;
+  range_end: string | null;
+  bucket: BucketSize;
+  activity: ActivityBucket[];
+  top_actions: ActionCount[];
+  top_users: UserCount[];
+}
