@@ -18,9 +18,13 @@ type Fetcher<T> = (
   signal: AbortSignal,
 ) => Promise<T>;
 
+export type Tab = 'sessions' | 'anomalies';
+
 const DEFAULT_PAGE_SIZE = 20;
 const BUCKET_SIZES: readonly BucketSize[] = ['day', 'week', 'month'];
 const DEFAULT_BUCKET: BucketSize = 'week';
+const TABS: readonly Tab[] = ['sessions', 'anomalies'];
+const DEFAULT_TAB: Tab = 'sessions';
 
 interface UseUrlFiltersOptions {
   /** Sessions/Anomalies read/write ?page=&page_size= and get the "don't
@@ -30,6 +34,10 @@ interface UseUrlFiltersOptions {
   /** Overview reads/writes ?bucket= and passes it to the fetcher. Other
    *  screens leave this off, so bucket never reaches their fetcher call. */
   bucketed?: boolean;
+  /** UsersScreen reads/writes ?tab= for the sessions/anomalies tabs. Not
+   *  passed to the fetcher — each tab's panel owns its own useUrlFilters call
+   *  against its own endpoint, so this is UI state only. */
+  tabbed?: boolean;
 }
 
 /**
@@ -40,7 +48,7 @@ interface UseUrlFiltersOptions {
  * free, since every screen reads the same three params.
  */
 export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>, options: UseUrlFiltersOptions = {}) {
-  const { paginated = false, bucketed = false } = options;
+  const { paginated = false, bucketed = false, tabbed = false } = options;
   const [searchParams, setSearchParams] = useSearchParams();
   const { data, loading, error, run, reset } = useQuery<T>();
 
@@ -50,6 +58,7 @@ export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>, op
   const pageParam = searchParams.get('page');
   const pageSizeParam = searchParams.get('page_size');
   const bucketParam = searchParams.get('bucket');
+  const tabParam = searchParams.get('tab');
 
   const page = paginated && pageParam !== null && /^\d+$/.test(pageParam) ? Number(pageParam) : 1;
   const pageSize =
@@ -57,6 +66,7 @@ export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>, op
   // An unrecognised value in a pasted URL falls back to the default rather than
   // erroring — the backend would 400, and a bad bookmark shouldn't be a dead end.
   const bucket: BucketSize = BUCKET_SIZES.find((b) => b === bucketParam) ?? DEFAULT_BUCKET;
+  const tab: Tab = TABS.find((t) => t === tabParam) ?? DEFAULT_TAB;
 
   const initialValues: InitialFilterValues = {
     userId: userIdParam ?? '',
@@ -116,10 +126,11 @@ export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>, op
     if (filters.userId !== undefined) next.set('user_id', String(filters.userId));
     if (filters.startTime) next.set('start_time', filters.startTime);
     if (filters.endTime) next.set('end_time', filters.endTime);
-    // A filter change starts back at page 1, but keeps the chosen page size
-    // and bucket — neither is part of the submitted form.
+    // A filter change starts back at page 1, but keeps the chosen page size,
+    // bucket and tab — none of those are part of the submitted form.
     if (paginated && pageSizeParam !== null) next.set('page_size', pageSizeParam);
     if (bucketed && bucketParam !== null) next.set('bucket', bucketParam);
+    if (tabbed && tabParam !== null) next.set('tab', tabParam);
     setSearchParams(next);
   }
 
@@ -142,5 +153,30 @@ export function useUrlFilters<T>(requireUserId: boolean, fetcher: Fetcher<T>, op
     setSearchParams(params);
   }
 
-  return { data, loading, error, reset, initialValues, handleSubmit, page, pageSize, setPage, setPageSize, bucket, setBucket };
+  // Writes tab and resets page in the same setSearchParams call, so only one
+  // navigation occurs and the fetch effect fires once — a page number from the
+  // previous tab is meaningless in the new one.
+  function setTab(next: Tab) {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', next);
+    params.set('page', '1');
+    setSearchParams(params);
+  }
+
+  return {
+    data,
+    loading,
+    error,
+    reset,
+    initialValues,
+    handleSubmit,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    bucket,
+    setBucket,
+    tab,
+    setTab,
+  };
 }

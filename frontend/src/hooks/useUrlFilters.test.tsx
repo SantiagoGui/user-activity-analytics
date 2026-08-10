@@ -103,4 +103,63 @@ describe('useUrlFilters', () => {
 
     expect(fetcher.mock.calls[0]![0].bucket).toBeUndefined();
   });
+
+  it('defaults tab to sessions', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    const { result } = renderHook(() => useUrlFilters<string>(true, fetcher, { paginated: true, tabbed: true }), {
+      wrapper: wrapperFor('/users?user_id=1'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.tab).toBe('sessions');
+  });
+
+  it('reads tab from the URL', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    const { result } = renderHook(() => useUrlFilters<string>(true, fetcher, { paginated: true, tabbed: true }), {
+      wrapper: wrapperFor('/users?user_id=1&tab=anomalies'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.tab).toBe('anomalies');
+  });
+
+  it('falls back to sessions for an unrecognised tab', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    const { result } = renderHook(() => useUrlFilters<string>(true, fetcher, { paginated: true, tabbed: true }), {
+      wrapper: wrapperFor('/users?user_id=1&tab=nonsense'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.tab).toBe('sessions');
+  });
+
+  it('resets page to 1 when the tab changes', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    const { result } = renderHook(() => useUrlFilters<string>(true, fetcher, { paginated: true, tabbed: true }), {
+      wrapper: wrapperFor('/users?user_id=1&page=3'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.page).toBe(3);
+
+    await act(async () => {
+      result.current.setTab('anomalies');
+      await Promise.resolve();
+    });
+
+    expect(result.current.tab).toBe('anomalies');
+    expect(result.current.page).toBe(1);
+  });
 });
