@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchUsers } from '../api';
-import type { UserCount } from '../types';
+import type { UserListEntry } from '../types';
 
 /**
  * Fetches the known user list once, for the User field's autocomplete.
@@ -9,8 +9,8 @@ import type { UserCount } from '../types';
  * input, not something that should raise its own error banner alongside the
  * screen's real query error.
  */
-export function useUsers(enabled: boolean): UserCount[] {
-  const [users, setUsers] = useState<UserCount[]>([]);
+export function useUsers(enabled: boolean): UserListEntry[] {
+  const [users, setUsers] = useState<UserListEntry[]>([]);
 
   useEffect(() => {
     if (!enabled) return;

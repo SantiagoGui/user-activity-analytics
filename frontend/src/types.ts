@@ -10,4 +10,10 @@ export type {
   Page,
   SessionsPage,
   UserCount,
+  BucketSize,
+  ActivityBucket,
+  ActionCount,
+  Overview,
+  Health,
+  UserListEntry,
 } from 'activity-analytics-shared-types';

@@ -1,4 +1,14 @@
-import type { AnomalyEvent, Page, SessionsPage, TrendPair, UserCount, UserSummary } from './types';
+import type {
+  AnomalyEvent,
+  BucketSize,
+  Health,
+  Overview,
+  Page,
+  SessionsPage,
+  TrendPair,
+  UserListEntry,
+  UserSummary,
+} from './types';
 
 /**
  * Requests are relative paths, proxied to the backend by Vite's dev server
@@ -35,8 +45,20 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 }
 
 /** Powers the User field's autocomplete. */
-export function fetchUsers(signal?: AbortSignal): Promise<UserCount[]> {
-  return getJson<UserCount[]>('/users', signal);
+export function fetchUsers(signal?: AbortSignal): Promise<UserListEntry[]> {
+  return getJson<UserListEntry[]>('/users', signal);
+}
+
+export function fetchOverview(
+  params: { startTime?: string; endTime?: string; bucket?: BucketSize },
+  signal?: AbortSignal,
+): Promise<Overview> {
+  const query = buildQuery({ start_time: params.startTime, end_time: params.endTime, bucket: params.bucket });
+  return getJson<Overview>(`/overview${query ? `?${query}` : ''}`, signal);
+}
+
+export function fetchHealth(signal?: AbortSignal): Promise<Health> {
+  return getJson<Health>('/health', signal);
 }
 
 export function fetchUserSummary(
