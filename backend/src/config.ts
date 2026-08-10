@@ -10,3 +10,13 @@ export const MAX_PAGE_SIZE = 100;
 
 export const DEFAULT_ACTION_TRENDS_LIMIT = 3;
 export const MAX_ACTION_TRENDS_LIMIT = 50;
+
+export const DEFAULT_BUCKET: 'day' | 'week' | 'month' = 'week';
+
+// How many top actions / top users GET /overview returns. Five fits the two
+// summary cards without scrolling; the endpoint is a summary, not a browser.
+export const OVERVIEW_TOP_N = 5;
+
+// Fixed length of each user's sparkline series on GET /users. Sized to be
+// legible at ~90px wide, not to be a chart.
+export const USER_SPARKLINE_BUCKETS = 24;

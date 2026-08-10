@@ -1,7 +1,9 @@
 import { isValidIsoTimestamp } from './shared/time';
 import { HttpError } from './errors';
+import type { BucketSize } from 'activity-analytics-shared-types';
 import {
   DEFAULT_ACTION_TRENDS_LIMIT,
+  DEFAULT_BUCKET,
   DEFAULT_PAGE_SIZE,
   MAX_ACTION_TRENDS_LIMIT,
   MAX_PAGE_SIZE,
@@ -104,4 +106,21 @@ export function parseLimit(query: Record<string, unknown>): number {
     throw new HttpError(400, `Invalid limit "${raw}", expected a positive integer`);
   }
   return Math.min(limit, MAX_ACTION_TRENDS_LIMIT);
+}
+
+const BUCKET_SIZES: readonly BucketSize[] = ['day', 'week', 'month'];
+
+/** Parses the optional bucket query param for /overview. Defaults to
+ *  DEFAULT_BUCKET. Unlike parseLimit/parsePagination there is nothing to clamp —
+ *  the value is an enum, so anything unrecognised is a 400. */
+export function parseBucket(query: Record<string, unknown>): BucketSize {
+  const raw = firstValue(query.bucket);
+  if (raw === undefined || raw === '') {
+    return DEFAULT_BUCKET;
+  }
+  const match = BUCKET_SIZES.find((size) => size === raw);
+  if (!match) {
+    throw new HttpError(400, `Invalid bucket "${raw}", expected one of: ${BUCKET_SIZES.join(', ')}`);
+  }
+  return match;
 }
