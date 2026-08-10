@@ -3,6 +3,16 @@
 The brief for Phase 7a. Every color and type decision in the CSS derives from this
 document. If something isn't here, it doesn't go in the stylesheet.
 
+> **Phase 8 amendment (backend only, in progress):** the API now exposes a
+> dataset-level `GET /overview` endpoint and gains `dataset_start`/`dataset_end`
+> on `/health` plus a per-user `activity` sparkline series on `/users`. These are
+> additive contract changes — no existing screen, route, or visual rule below
+> was touched. The frontend/IA/visual amendments planned for the rest of Phase 8
+> (three-screen structure, data monospace, wordmark, master–detail users screen)
+> are documented in
+> [`docs/superpowers/plans/2026-08-10-phase-8-product-shape.md`](superpowers/plans/2026-08-10-phase-8-product-shape.md)
+> and land, with their own doc updates, once that work is executed.
+
 ## The subject
 
 A tool for investigating what one user did, over time. Not a dashboard — a dashboard
