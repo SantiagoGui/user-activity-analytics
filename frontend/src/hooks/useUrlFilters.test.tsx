@@ -64,4 +64,43 @@ describe('useUrlFilters', () => {
       expect.any(AbortSignal),
     );
   });
+
+  it('reads bucket from the URL when bucketed', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    renderHook(() => useUrlFilters<string>(false, fetcher, { bucketed: true }), {
+      wrapper: wrapperFor('/?bucket=month'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetcher.mock.calls[0]![0].bucket).toBe('month');
+  });
+
+  it('defaults bucket to week and ignores an unrecognised value', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    renderHook(() => useUrlFilters<string>(false, fetcher, { bucketed: true }), {
+      wrapper: wrapperFor('/?bucket=fortnight'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetcher.mock.calls[0]![0].bucket).toBe('week');
+  });
+
+  it('does not send bucket when not bucketed', async () => {
+    const fetcher = vi.fn().mockResolvedValue('ok');
+    renderHook(() => useUrlFilters<string>(false, fetcher), {
+      wrapper: wrapperFor('/?bucket=month'),
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetcher.mock.calls[0]![0].bucket).toBeUndefined();
+  });
 });
