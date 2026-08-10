@@ -1,3 +1,5 @@
+import type { BucketSize } from './types';
+
 /**
  * Formats a UTC ISO timestamp for display using getUTC* accessors — never
  * toLocaleString()/toString(), which render in the browser's local timezone
@@ -22,6 +24,16 @@ export function formatDateOnly(iso: string): string {
 export function formatShortDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/** Axis label for a bucket start, at the granularity the bucket implies —
+ *  a weekly axis showing full timestamps is unreadable. All UTC. */
+export function formatBucketLabel(iso: string, bucket: BucketSize): string {
+  const date = new Date(iso);
+  if (bucket === 'month') {
+    return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  }
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
 /**

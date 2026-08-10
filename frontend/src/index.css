@@ -412,6 +412,24 @@ button:focus-visible {
   box-shadow: 0 1px 2px rgba(31, 37, 47, 0.06);
 }
 
+.activity-chart {
+  background: var(--panel);
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+  padding: var(--space-6);
+  box-shadow: 0 1px 2px rgba(31, 37, 47, 0.06);
+}
+
+.activity-chart-peak {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-2);
+}
+
+.activity-chart-canvas {
+  height: 280px;
+}
+
 /* ---------- Session timeline (docs/design.md "Signature") ---------- */
 
 .timeline {
