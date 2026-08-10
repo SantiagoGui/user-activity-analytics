@@ -30,7 +30,9 @@ export default defineConfig({
       '/overview': 'http://localhost:4000',
       '/sessions': { target: 'http://localhost:4000', bypass: bypassNavigation },
       '/anomalies': { target: 'http://localhost:4000', bypass: bypassNavigation },
-      '/users': 'http://localhost:4000',
+      // /users is now both an API prefix and a client route, the same
+      // collision /summary/sessions/anomalies hit in Phase 5.
+      '/users': { target: 'http://localhost:4000', bypass: bypassNavigation },
       '/health': 'http://localhost:4000',
       '/load': 'http://localhost:4000',
     },

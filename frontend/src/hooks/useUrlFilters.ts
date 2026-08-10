@@ -3,8 +3,19 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from './useQuery';
 import { validateFilters } from '../validation';
 import { utcIsoToDatetimeLocal } from '../time';
-import type { FilterValues, InitialFilterValues } from '../components/ActivityFilters';
 import type { BucketSize, Page } from '../types';
+
+export interface FilterValues {
+  userId?: number;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface InitialFilterValues {
+  userId: string;
+  startTime: string;
+  endTime: string;
+}
 
 type Fetcher<T> = (
   filters: {

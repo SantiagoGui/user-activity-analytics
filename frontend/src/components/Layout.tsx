@@ -3,10 +3,8 @@ import { Wordmark } from './Wordmark';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', end: true },
-  { to: '/summary', label: 'User Summary' },
-  { to: '/trends', label: 'Action Trends' },
-  { to: '/sessions', label: 'Sessions' },
-  { to: '/anomalies', label: 'Anomalies' },
+  { to: '/users', label: 'Users' },
+  { to: '/trends', label: 'Trends' },
 ];
 
 export function Layout() {
