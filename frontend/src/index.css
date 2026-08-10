@@ -475,6 +475,63 @@ button:focus-visible {
   font-size: var(--text-sm);
 }
 
+/* ---------- User detail (Users screen) ---------- */
+
+.user-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.user-detail-heading {
+  font-size: var(--text-lg);
+}
+
+.user-detail-count {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.user-tabs-list {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--muted);
+  margin-bottom: var(--space-4);
+}
+
+.user-tabs-trigger {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.user-tabs-trigger:hover {
+  color: var(--ink);
+  background: transparent;
+}
+
+.user-tabs-trigger[data-state='active'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.user-tabs-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.user-tabs-count {
+  color: inherit;
+}
+
 /* ---------- Overview screen ---------- */
 
 .overview-body {
