@@ -17,6 +17,13 @@ export function formatDateOnly(iso: string): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
+/** e.g. "2024-01-07T04:10:14Z" -> "7 Jan 2024" — the compact form used in the
+ *  top filter bar's range chip and empty states. UTC, per CLAUDE.md #4. */
+export function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 /**
  * e.g. 100 -> "1m 40s", 45 -> "45s".
  *
