@@ -90,3 +90,16 @@ export interface Overview {
 export interface UserListEntry extends UserCount {
   activity: number[];
 }
+
+// GET /health — load state plus the dataset's own bounds, which the UI uses to
+// clamp its date inputs. Filter-independent by definition; /overview's
+// range_start/range_end describe a filtered slice and are not interchangeable.
+export interface Health {
+  loaded: boolean;
+  total_lines: number | null;
+  rows_loaded: number | null;
+  rows_skipped: number | null;
+  skipped_reasons: string[] | null;
+  dataset_start: string | null;
+  dataset_end: string | null;
+}

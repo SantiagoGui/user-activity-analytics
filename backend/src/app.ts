@@ -2,13 +2,15 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import cors from 'cors';
 import { loadActivities } from './loader';
 import type { ActivityStore } from './store';
-import { parseTimeRange, parseRequiredUserId, parsePagination, parseLimit } from './validation';
+import { parseTimeRange, parseRequiredUserId, parsePagination, parseLimit, parseBucket } from './validation';
 import { HttpError } from './errors';
 import { computeUserSummary, computeActionTrends } from './analytics';
 import { computeSessions, sessionsRange } from './sessions';
 import { computeAnomalies } from './anomalies';
+import { computeOverview } from './overview';
 import { paginate } from './pagination';
-import type { UserCount } from 'activity-analytics-shared-types';
+import { msToIso } from './shared/time';
+import type { Health, UserListEntry } from 'activity-analytics-shared-types';
 
 function requireLoaded(store: ActivityStore): void {
   if (!store.isLoaded()) {
@@ -112,10 +114,30 @@ export function createApp(store: ActivityStore): express.Express {
     }
   });
 
+  /**
+   * The one endpoint that describes the dataset rather than interrogating a slice
+   * of it. No user_id, and — unlike /summary — an empty range is a 200 with zeros,
+   * not a 404: "nothing happened in that window" is a correct answer about a
+   * dataset, so this follows /sessions' side of the asymmetry in CLAUDE.md #4.
+   */
+  app.get('/overview', (req: Request, res: Response, next: NextFunction) => {
+    try {
+      requireLoaded(store);
+      const query = req.query as Record<string, unknown>;
+      const { startMs, endMs } = parseTimeRange(query);
+      const bucket = parseBucket(query);
+      res.json(computeOverview(store.getAllUsersEventsInRange(startMs, endMs), bucket));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.get('/users', (_req: Request, res: Response, next: NextFunction) => {
     try {
       requireLoaded(store);
-      const users: UserCount[] = store.listUserCounts().map(({ userId, count }) => ({ user_id: userId, count }));
+      const users: UserListEntry[] = store
+        .listUserCounts()
+        .map(({ userId, count, activity }) => ({ user_id: userId, count, activity }));
       res.json(users);
     } catch (err) {
       next(err);
@@ -126,13 +148,17 @@ export function createApp(store: ActivityStore): express.Express {
   // state, including "never loaded," so it always 200s instead of 503ing.
   app.get('/health', (_req: Request, res: Response) => {
     const last = store.getLastLoadResult();
-    res.json({
+    const bounds = store.getDatasetBounds();
+    const health: Health = {
       loaded: store.isLoaded(),
       total_lines: last?.totalLines ?? null,
       rows_loaded: last?.loaded ?? null,
       rows_skipped: last?.skipped ?? null,
       skipped_reasons: last?.skippedReasons ?? null,
-    });
+      dataset_start: bounds ? msToIso(bounds.startMs) : null,
+      dataset_end: bounds ? msToIso(bounds.endMs) : null,
+    };
+    res.json(health);
   });
 
   app.use((_req: Request, res: Response) => {

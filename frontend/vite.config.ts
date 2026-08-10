@@ -25,6 +25,9 @@ export default defineConfig({
       // relative paths like /summary without hardcoding a host/port.
       '/summary': { target: 'http://localhost:4000', bypass: bypassNavigation },
       '/action_trends': 'http://localhost:4000',
+      // API-only: the Overview screen lives at `/`, not `/overview`, precisely so this
+      // path never doubles as a client route and needs no navigation bypass.
+      '/overview': 'http://localhost:4000',
       '/sessions': { target: 'http://localhost:4000', bypass: bypassNavigation },
       '/anomalies': { target: 'http://localhost:4000', bypass: bypassNavigation },
       '/users': 'http://localhost:4000',

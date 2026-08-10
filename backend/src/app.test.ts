@@ -159,6 +159,56 @@ describe('GET /sessions and /anomalies', () => {
   });
 });
 
+describe('GET /overview', () => {
+  const app = createLoadedApp();
+
+  it('503s before any successful load', async () => {
+    const res = await request(createApp(new ActivityStore())).get('/overview');
+    expect(res.status).toBe(503);
+    expect(res.body.error).toMatch(/not been loaded/i);
+  });
+
+  it('returns dataset totals with a weekly series by default', async () => {
+    const res = await request(app).get('/overview');
+    expect(res.status).toBe(200);
+    expect(res.body.bucket).toBe('week');
+    expect(res.body.total_events).toBeGreaterThan(0);
+    expect(res.body.activity.length).toBeGreaterThan(0);
+    expect(res.body.top_actions.length).toBeLessThanOrEqual(5);
+  });
+
+  it('honours an explicit bucket', async () => {
+    const res = await request(app).get('/overview?bucket=month');
+    expect(res.status).toBe(200);
+    expect(res.body.bucket).toBe('month');
+  });
+
+  it('400s on an unrecognised bucket', async () => {
+    const res = await request(app).get('/overview?bucket=fortnight');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('fortnight');
+  });
+
+  it('400s when start_time is after end_time', async () => {
+    const res = await request(app).get('/overview?start_time=2024-06-01T00:00:00Z&end_time=2024-01-01T00:00:00Z');
+    expect(res.status).toBe(400);
+  });
+
+  it('200s with zeros on an empty range rather than 404ing', async () => {
+    // Unlike /summary, this endpoint describes a dataset — "nothing happened in
+    // that window" is a correct answer, not a missing resource.
+    const res = await request(app).get('/overview?start_time=1999-01-01T00:00:00Z&end_time=1999-01-02T00:00:00Z');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      total_events: 0,
+      total_users: 0,
+      range_start: null,
+      range_end: null,
+      activity: [],
+    });
+  });
+});
+
 describe('GET /action_trends', () => {
   const app = createLoadedApp();
 
@@ -194,11 +244,20 @@ describe('GET /users', () => {
   it('200s with every user_id and its event count, sorted ascending', async () => {
     const res = await request(app).get('/users');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
+    expect(res.body.map((u: { user_id: number; count: number }) => ({ user_id: u.user_id, count: u.count }))).toEqual([
       { user_id: 1, count: 4 },
       { user_id: 2, count: 3 },
       { user_id: 3, count: 3 },
     ]);
+  });
+});
+
+describe('GET /users sparklines', () => {
+  it('carries a fixed-length activity series per user', async () => {
+    const app = createLoadedApp();
+    const res = await request(app).get('/users');
+    expect(res.status).toBe(200);
+    expect(res.body[0].activity).toHaveLength(24);
   });
 });
 
@@ -207,13 +266,15 @@ describe('GET /health', () => {
     const app = createLoadedApp();
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
+    expect(res.body).toMatchObject({
       loaded: true,
       total_lines: 10,
       rows_loaded: 10,
       rows_skipped: 0,
       skipped_reasons: [],
     });
+    expect(res.body.dataset_start).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(res.body.dataset_end).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   // Deliberately exempt from requireLoaded (unlike every other endpoint below):
@@ -228,7 +289,25 @@ describe('GET /health', () => {
       rows_loaded: null,
       rows_skipped: null,
       skipped_reasons: null,
+      dataset_start: null,
+      dataset_end: null,
     });
+  });
+});
+
+describe('GET /health dataset bounds', () => {
+  it('reports nulls before a load', async () => {
+    const res = await request(createApp(new ActivityStore())).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.dataset_start).toBeNull();
+    expect(res.body.dataset_end).toBeNull();
+  });
+
+  it('reports the dataset span once loaded', async () => {
+    const app = createLoadedApp();
+    const res = await request(app).get('/health');
+    expect(res.body.dataset_start).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(res.body.dataset_end).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
 
@@ -242,13 +321,15 @@ describe('endpoints before any successful load', () => {
 
   // New in Phase 3: /sessions, /anomalies, /users all go through the same
   // requireLoaded check as the Phase-1/2 endpoints.
-  it('503s on /sessions, /anomalies, and /users', async () => {
+  it('503s on /sessions, /anomalies, /users, and /overview', async () => {
     const app = createApp(new ActivityStore());
     const sessions = await request(app).get('/sessions?user_id=1');
     const anomalies = await request(app).get('/anomalies?user_id=1');
     const users = await request(app).get('/users');
+    const overview = await request(app).get('/overview');
     expect(sessions.status).toBe(503);
     expect(anomalies.status).toBe(503);
     expect(users.status).toBe(503);
+    expect(overview.status).toBe(503);
   });
 });
