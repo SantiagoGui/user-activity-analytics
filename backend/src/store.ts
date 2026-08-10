@@ -1,4 +1,6 @@
 import type { ActivityEvent, LoadResult } from './types';
+import { computeSparkline } from './sparkline';
+import { USER_SPARKLINE_BUCKETS } from './config';
 
 /** First index in `arr` whose timestampMs is >= target (lower bound). */
 function bisectLeft(arr: ActivityEvent[], target: number): number {
@@ -49,6 +51,7 @@ class ActivityStore {
   private eventsByUser: Map<number, ActivityEvent[]> = new Map();
   private loaded = false;
   private lastLoadResult: LoadResult | null = null;
+  private datasetBounds: { startMs: number; endMs: number } | null = null;
 
   replaceData(events: ActivityEvent[], result: LoadResult): void {
     const next = new Map<number, ActivityEvent[]>();
@@ -63,6 +66,17 @@ class ActivityStore {
     for (const bucket of next.values()) {
       bucket.sort((a, b) => a.timestampMs - b.timestampMs);
     }
+
+    let startMs = Number.POSITIVE_INFINITY;
+    let endMs = Number.NEGATIVE_INFINITY;
+    for (const bucket of next.values()) {
+      startMs = Math.min(startMs, bucket[0]!.timestampMs);
+      endMs = Math.max(endMs, bucket[bucket.length - 1]!.timestampMs);
+    }
+    // Computed once per load rather than per request: the bounds are the one fact
+    // about the dataset every screen needs and none of them can derive.
+    this.datasetBounds = next.size === 0 ? null : { startMs, endMs };
+
     // Only swapped in on success, so a failed reload never clobbers good data.
     this.eventsByUser = next;
     this.loaded = true;
@@ -98,12 +112,25 @@ class ActivityStore {
     return out;
   }
 
-  /** Every known user_id with its total event count, sorted ascending by
-   *  user_id — a new endpoint with no prior ordering to preserve, and
-   *  ascending is the natural contract for something powering an autocomplete. */
-  listUserCounts(): { userId: number; count: number }[] {
+  /** Bounds of the whole dataset, independent of any query filter. Null before
+   *  the first successful load, or after loading an empty file. */
+  getDatasetBounds(): { startMs: number; endMs: number } | null {
+    return this.datasetBounds;
+  }
+
+  /** Every known user_id with its total event count and an activity sparkline,
+   *  sorted ascending by user_id — a stable ordering for a list the user scans,
+   *  independent of how active anyone is. */
+  listUserCounts(): { userId: number; count: number; activity: number[] }[] {
+    const bounds = this.datasetBounds;
     return Array.from(this.eventsByUser.entries())
-      .map(([userId, bucket]) => ({ userId, count: bucket.length }))
+      .map(([userId, bucket]) => ({
+        userId,
+        count: bucket.length,
+        activity: bounds
+          ? computeSparkline(bucket, bounds.startMs, bounds.endMs, USER_SPARKLINE_BUCKETS)
+          : new Array<number>(USER_SPARKLINE_BUCKETS).fill(0),
+      }))
       .sort((a, b) => a.userId - b.userId);
   }
 }

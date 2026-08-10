@@ -81,3 +81,45 @@ describe('ActivityStore', () => {
     expect(store.hasUser(999)).toBe(false);
   });
 });
+
+describe('getDatasetBounds', () => {
+  it('returns null before any load', () => {
+    expect(new ActivityStore().getDatasetBounds()).toBeNull();
+  });
+
+  it('spans the earliest and latest event across all users', () => {
+    const store = new ActivityStore();
+    store.replaceData(
+      [
+        event(2, '2024-06-01T00:00:00Z'),
+        event(1, '2024-01-01T00:00:00Z'),
+        event(1, '2024-12-31T00:00:00Z'),
+      ],
+      { totalLines: 3, loaded: 3, skipped: 0, skippedReasons: [] },
+    );
+    expect(store.getDatasetBounds()).toEqual({
+      startMs: Date.parse('2024-01-01T00:00:00Z'),
+      endMs: Date.parse('2024-12-31T00:00:00Z'),
+    });
+  });
+});
+
+describe('listUserCounts', () => {
+  it('gives every user a fixed-length series summing to their count', () => {
+    const store = new ActivityStore();
+    store.replaceData(
+      [
+        event(1, '2024-01-01T00:00:00Z'),
+        event(1, '2024-06-01T00:00:00Z'),
+        event(2, '2024-12-31T00:00:00Z'),
+      ],
+      { totalLines: 3, loaded: 3, skipped: 0, skippedReasons: [] },
+    );
+    const users = store.listUserCounts();
+    expect(users).toHaveLength(2);
+    for (const user of users) {
+      expect(user.activity).toHaveLength(24);
+      expect(user.activity.reduce((a, b) => a + b, 0)).toBe(user.count);
+    }
+  });
+});

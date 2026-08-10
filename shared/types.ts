@@ -83,3 +83,10 @@ export interface Overview {
   top_actions: ActionCount[];
   top_users: UserCount[];
 }
+
+// GET /users — powers the user list. `activity` is a fixed-length series across
+// the *dataset* bounds, not the current filter, so a user's shape stays
+// recognisable as you change the range.
+export interface UserListEntry extends UserCount {
+  activity: number[];
+}
