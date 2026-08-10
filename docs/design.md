@@ -3,15 +3,26 @@
 The brief for Phase 7a. Every color and type decision in the CSS derives from this
 document. If something isn't here, it doesn't go in the stylesheet.
 
-> **Phase 8 amendment (backend only, in progress):** the API now exposes a
-> dataset-level `GET /overview` endpoint and gains `dataset_start`/`dataset_end`
-> on `/health` plus a per-user `activity` sparkline series on `/users`. These are
-> additive contract changes — no existing screen, route, or visual rule below
-> was touched. The frontend/IA/visual amendments planned for the rest of Phase 8
-> (three-screen structure, data monospace, wordmark, master–detail users screen)
-> are documented in
-> [`docs/superpowers/plans/2026-08-10-phase-8-product-shape.md`](superpowers/plans/2026-08-10-phase-8-product-shape.md)
-> and land, with their own doc updates, once that work is executed.
+## Phase 8 amendments (2026-08-10)
+
+Phase 8 turned the app from a four-screen query tool into a three-screen product
+(Overview, Users, Trends) that opens with an answer instead of an empty form. Full
+reasoning: [`docs/superpowers/specs/2026-08-10-overview-product-design.md`](superpowers/specs/2026-08-10-overview-product-design.md).
+Every departure from the sections below is recorded here, with its reason, per this
+document's own rule: an unrecorded amendment breaks the property that makes this
+doc worth having.
+
+| Section below | Amendment | Why |
+|---|---|---|
+| "Not a dashboard — a dashboard shows you everything at once and answers nothing." | Overview (`/`) is admitted as a screen that answers one dataset-level question and routes into a user. | Written when the app was per-user only. The objection was to sprawl, not to a dataset-level entry point — the empty-form-first problem was real and this fixes it. |
+| "System font stack stays… Personality comes from the scale and from how numbers are set, not from a display face." | Amended: system stack for UI text (unchanged), a **monospace** (`--font-data`, self-hosted JetBrains Mono) for numbers, timestamps, durations, and user IDs. | The doc's own instrument logic — tabular numerals — argues for a data-specific face. Declining a *display* face was right; declining all type identity conflated the two. |
+| Layout section's left filter rail + `▪` wordmark sketch | The rail is replaced by a shared **top filter bar** (range chip, `Custom…` popover clamped to the dataset's own bounds, a bucket segmented control on Overview). The `▪` becomes the session-bars **Wordmark** component. | The rail made a once-per-session control permanent furniture and left the actual subject in the smaller half of the screen. The clamp on the custom-range inputs is also the fix for filters accepting a window the dataset can't contain. |
+| Signature section | Extended: **sparklines** in the Users list (`Sparkline.tsx`, ~90px, scaled to each user's own max) make activity shape scannable at a glance. | Same idea as the session timeline — make the time dimension visible — applied to the list that replaced the old `<datalist>` picker. |
+| "No zebra striping." | **Unchanged** — retained. | Reasoned, and it still holds. |
+| "No dark mode." | **Unchanged** — retained. | A real dark variant needs its own token set, not inverted values. Still true. |
+
+**Not built in Phase 8** (left for a later pass, not silently dropped): the anomalies
+duration-distribution strip described in the original Signature section below.
 
 ## The subject
 
@@ -90,6 +101,11 @@ enough to not blur together.
 
 ## Layout
 
+> Superseded by the Phase 8 amendment above: the left rail this section designs is
+> now a shared top filter bar. Kept below as the record of the original reasoning
+> for the fix (centering a fluid results region) — the top-bar rewrite fixed the
+> same root cause a different way.
+
 The current layout centers a 960px column and lets a single 380px card float inside
 it, so on a wide screen the content sits stranded in the upper left. Fix the cause,
 not the symptom:
@@ -147,7 +163,12 @@ table. This is the one place to spend visual ambition; everything else stays qui
 
 Anomalies get a restrained version of the same idea: a duration distribution strip
 with flagged points marked, so "2 standard deviations out" becomes something you see
-rather than something you take on faith.
+rather than something you take on faith. **Not built in Phase 8** — see the
+amendments section above.
+
+The Users list sparklines (Phase 8) apply the same time-is-the-domain idea one level
+up: a fixed-length, per-user activity shape at ~90px, so steady/bursty/flat users are
+distinguishable in the list itself, not just once you've drilled into one.
 
 ## Motion and loading
 

@@ -238,8 +238,101 @@ or submit logic, and a fast double-submit can't render a stale response.
       `sessions.ts`, `anomalies.ts` now import the interfaces instead of
       declaring them); `frontend/src/types.ts` re-exports the same types
       instead of hand-mirroring them.
-- [ ] README: evolution section (2h MVP → hardening phases), screenshots, test and
-      lint commands, `PORT` documented.
+- [x] README: evolution section (2h MVP → hardening phases), screenshots, test
+      commands, `PORT` documented. Closed in Phase 8 (see below) alongside the
+      README's API section rewrite, since both touched the same file in the same
+      pass. No lint command to document — CI/lint setup stays explicitly out of
+      scope (see Phase 8's own out-of-scope note).
+
+---
+
+## Phase 8 — Product shape
+
+Full plan and reasoning:
+[`docs/superpowers/plans/2026-08-10-phase-8-product-shape.md`](superpowers/plans/2026-08-10-phase-8-product-shape.md) /
+[`docs/superpowers/specs/2026-08-10-overview-product-design.md`](superpowers/specs/2026-08-10-overview-product-design.md).
+Two problems drove it, both observed in the running app: the user picker was an
+unstyled OS `<datalist>` popup that ignored the palette and couldn't be searched
+sensibly, and nothing told the operator where the data actually was, so an
+impossible date range silently returned an empty result that read as a bug.
+
+**Step 1 — Backend (additive):**
+- [x] `GET /overview?start_time=&end_time=&bucket=` — dataset totals, a bucketed
+      activity series, top actions, top users. `computeOverview()` reuses
+      `store.getAllUsersEventsInRange()`; no new store index, no change to the load
+      path.
+- [x] UTC bucket boundary math (`bucketStartMs`/`nextBucketMs`) — day to midnight,
+      week to the preceding Monday, month to the 1st by calendar increment. Empty
+      buckets are emitted, not skipped (CLAUDE.md §4).
+- [x] `/health` gains `dataset_start`/`dataset_end` — the dataset's own bounds,
+      filter-independent, computed once in `replaceData` rather than per request.
+- [x] `/users` gains a per-user `activity` sparkline series (`USER_SPARKLINE_BUCKETS
+      = 24`), spanning the dataset's bounds rather than the current filter.
+
+**Step 2 — Identity foundations (applies to the pre-existing screens first, so value
+lands before any restructure):**
+- [x] Self-hosted `--font-data` (JetBrains Mono via `@fontsource`, no CDN) applied to
+      every numeric surface.
+- [x] Session-bars `Wordmark` component beside the header title.
+- [x] Result-region fade transition, `Skeleton` loading rows, visible focus rings —
+      the parts of Phase 7's design doc that were specified but never built.
+
+**Step 3 — Routing + filter bar + Overview screen (still additive; old screens
+remained reachable underneath until Step 4):**
+- [x] `TopFilterBar` — range chip, `Custom…` popover (Radix) with date inputs
+      clamped to `/health`'s dataset bounds (the actual fix for the
+      impossible-window problem — it makes the bad query untypeable), and a bucket
+      segmented control.
+- [x] `ActivityChart` — Chart.js line, single hue read from `--accent`, no vertical
+      gridlines, no point markers at rest, peak labelled once (not every point).
+- [x] Overview screen (`/`) — KPI tiles, the activity chart, top actions and
+      most-active users with `<Link>` drill-downs into `/users?user_id=`.
+- [x] Trends chart restyled to the same mark spec; drill-down list added beneath it.
+      Real `<Link>`s, not canvas click handlers — keeps Phase 7's keyboard/focus
+      accessibility work intact.
+
+**Step 4 — Users master–detail (the one destructive step: deleted three components
+and rebuilt their content inside a new screen):**
+- [x] `UserList` — a filtered `role="listbox"` over `GET /users`, each row showing
+      the ID, a `Sparkline`, and the count. Replaces the `<datalist>` autocomplete
+      entirely (no combobox needed — the list is always visible, so it's a simpler
+      pattern than the popup it replaced).
+- [x] `UserDetail` — a summary tile row plus Radix `Tabs` for Sessions/Anomalies,
+      each tab's panel owning its own `useUrlFilters` call against its own endpoint.
+      Tab triggers carry live counts; switching tabs resets `page` to 1 in the same
+      navigation.
+- [x] `UsersScreen` assembles list + detail; `/summary`, `/sessions`, `/anomalies`
+      become redirects into `/users` that preserve the query string (and set `?tab=`
+      where relevant), so previously shared links still resolve.
+- [x] `vite.config.ts` — `/users` is now both an API prefix and a client route, the
+      same collision `/summary`/`/sessions`/`/anomalies` hit in Phase 5; given the
+      same `bypass` treatment.
+- [x] `UserSummaryForm`, `SessionsForm`, `AnomaliesForm`, `ActivityFilters`, and the
+      now-unused `ScreenLayout` (the old rail wrapper) deleted. `ActionTrendsForm`
+      migrated to `TopFilterBar` in the same step — not originally scoped to this
+      task, but required once `ActivityFilters` was gone; the plan's "no dangling
+      references" check is what surfaced it.
+- [x] First test infrastructure for rendered components (`@testing-library/jest-dom`,
+      a shared `test-setup.ts` with `afterEach(cleanup)`) — `UserList.test.tsx` was
+      the first test in either package to render a component rather than a hook.
+
+**Not built in Phase 8** (see `docs/design.md`'s amendments section): the anomalies
+duration-distribution strip designed in the spec's §4.4 but not implemented.
+
+**Known simplifications against the original plan**, made for scope/robustness, not
+laziness — each is small and reversible if it matters later:
+- The activity chart's peak is a text caption above the chart ("Peak: N on <date>")
+  rather than a label absolutely positioned over the peak point — same information,
+  robust to resize, no pixel-position math against the canvas.
+- Both Sessions and Anomalies tab panels are mounted simultaneously (Radix
+  `forceMount` + `hidden`) rather than lazily, so both tab triggers can show a count
+  before the user has switched tabs once.
+- The Users screen collapses to a single stacked column below 900px rather than the
+  `<details>` disclosure pattern the older screens used — functional, simpler, no
+  horizontal scroll, but not the exact same collapse interaction.
+
+**Done when:** every invariant this phase added lives in CLAUDE.md §4, `tsc --noEmit`
+is clean and tests pass on both packages, and the app runs against the real CDN CSV.
 
 ---
 

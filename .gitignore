@@ -6,3 +6,5 @@ build/
 tmp_analysis/
 .claude/settings.local.json
 *.tsbuildinfo
+.superpowers/
+docs/superpowers/

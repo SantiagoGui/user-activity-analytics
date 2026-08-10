@@ -17,6 +17,9 @@ A full-stack app answering analytics questions over a user-activity event log.
 
 - **Backend** (Node.js + TypeScript + Express): fetches `activities.csv` from a CDN
   URL on startup and via `POST /load`, parses it into an in-memory store, exposes:
+  - `GET /overview?start_time=&end_time=&bucket=day|week|month` — dataset-level
+    totals, a bucketed activity series, top actions, and most-active users.
+    `200`s with zeros on an empty range (see §4).
   - `GET /summary?user_id=&start_time=&end_time=` — per-user stats.
   - `GET /action_trends?start_time=&end_time=&limit=` — top `(user_id, action)`
     pairs (`limit` defaults to 3, capped at 50).
@@ -24,11 +27,18 @@ A full-stack app answering analytics questions over a user-activity event log.
     (gap ≤ 30 min), paginated.
   - `GET /anomalies?user_id=&start_time=&end_time=&page=&page_size=` —
     durations >2σ from the mean, same paginated envelope as `/sessions`.
-  - `GET /users` — every known `user_id` with its event count.
-  - `GET /health` — load status and row/skip diagnostics; the one endpoint
-    that works before any successful load.
-- **Frontend** (React + TypeScript + Vite): one screen per feature, sharing a filter
-  component and a query hook. Chart.js for trends.
+  - `GET /users` — every known `user_id` with its event count and a fixed-length
+    activity sparkline spanning the dataset (not the current filter).
+  - `GET /health` — load status, row/skip diagnostics, and the dataset's own
+    time bounds (`dataset_start`/`dataset_end`); the one endpoint that works
+    before any successful load.
+- **Frontend** (React + TypeScript + Vite): three screens — Overview (`/`,
+  dataset-level, no input required), Users (`/users?user_id=`, a searchable
+  master list + detail with Sessions/Anomalies tabs), and Trends (`/trends`).
+  A shared top filter bar (range chip + custom-range popover, clamped to the
+  dataset bounds) replaces the old per-screen filter rail. Chart.js for the
+  activity-over-time line and the trends bar chart. `/summary`, `/sessions`,
+  `/anomalies` redirect into `/users`, preserving query strings, for old links.
 - **No database.** Everything lives in memory for the process lifetime.
 
 `backend/` and `frontend/` stay separate packages. Do not merge them.
@@ -121,6 +131,25 @@ Changing any of them is a deliberate task with a doc update, never a cleanup.
   — verified across all rows). The API accepts and returns UTC ISO 8601. The frontend
   must not convert `datetime-local` input through `new Date()`, which reinterprets it
   as browser-local time and silently shifts the filter window.
+- **`/overview` returns `200` with zeros on an empty range, not `404`.** It
+  describes a dataset, not a single user, so "nothing happened in that window"
+  is a correct answer — same reasoning as `/sessions`/`/anomalies`, opposite to
+  `/summary`.
+- **`/overview`'s activity series emits empty buckets, never skips them.** A
+  series that omits a silent period redraws the shape of the data — a user (or
+  dataset) that went quiet for a while would look identical to one that never
+  stopped.
+- **Bucket boundaries are UTC**: day floors to UTC midnight, week to the
+  preceding UTC Monday, month to the 1st. Month stepping is a calendar
+  increment (`Date.UTC(y, m+1, 1)`), not a fixed millisecond delta.
+- **Dataset bounds live on `/health` and are filter-independent.** `/overview`'s
+  `range_start`/`range_end` describe the current filtered slice and shrink as
+  you filter; `/health`'s `dataset_start`/`dataset_end` describe the whole
+  dataset and never change with a query. The two are not interchangeable —
+  putting bounds on both would create two sources of truth for the same fact.
+- **`/users`' sparklines span the dataset, not the current filter**, so a
+  user's shape stays recognisable as the range changes — the list is a
+  navigation aid, not a filtered chart.
 
 ## 5. How we work
 
